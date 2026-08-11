@@ -274,12 +274,10 @@ def _write_json(path: Path, payload: Mapping[str, Any], mode: int) -> None:
             os.O_WRONLY | os.O_CREAT | os.O_EXCL,
             0o600,
         )
-        if os.name == "nt":
-            # Windows does not expose POSIX fd permission controls. The output
-            # directory remains local and the documented mode is best effort.
-            os.chmod(temporary, mode)
-        else:
+        if os.name != "nt":
             os.fchmod(descriptor, mode)
+        # Windows applies the destination directory's ACL. POSIX chmod modes
+        # neither model nor strengthen that ACL, so do not pretend they do.
         encoded = (
             json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
         ).encode("utf-8")

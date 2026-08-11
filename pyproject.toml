@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "talend-cloud-github-api-starter"
-version = "0.1.0"
+version = "0.1.1"
 description = "A safe, read-only starter for Talend Cloud and public GitHub Talend job inventory."
 readme = "README.md"
 requires-python = ">=3.10"
