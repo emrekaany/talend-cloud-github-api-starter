@@ -205,7 +205,9 @@ def test_output_temp_file_is_removed_when_replace_fails(
             {"output_class": "local_view"},
             {"output_class": "share_safe"},
         )
-    assert observed_modes == [0o600]
+    assert len(observed_modes) == 1
+    if os.name != "nt":
+        assert observed_modes == [0o600]
     assert list(tmp_path.glob(".*.tmp")) == []
 
 
