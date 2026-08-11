@@ -5,6 +5,7 @@ import json
 import os
 import stat
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from typer.testing import CliRunner
@@ -13,6 +14,7 @@ from talend_api_starter.cli import app
 from talend_api_starter.errors import ValidationError
 from talend_api_starter.github import GitHubSnapshot
 from talend_api_starter.outputs import (
+    _is_windows_junction,
     cloud_outputs,
     github_job_outputs,
     write_output_bundle,
@@ -22,6 +24,24 @@ from talend_api_starter.workflows import save_demo
 from talend_api_starter.xmlsafe import inventory_talend_jobs
 
 runner = CliRunner()
+
+
+def test_windows_junction_tag_is_detected_without_pathlib_api(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    synthetic_mount_point_tag = 0xA0000003
+    monkeypatch.setattr(
+        stat,
+        "IO_REPARSE_TAG_MOUNT_POINT",
+        synthetic_mount_point_tag,
+        raising=False,
+    )
+
+    assert _is_windows_junction(
+        SimpleNamespace(st_reparse_tag=synthetic_mount_point_tag)
+    )
+    assert not _is_windows_junction(SimpleNamespace(st_reparse_tag=0))
+    assert not _is_windows_junction(SimpleNamespace())
 
 
 def test_demo_is_offline_and_writes_two_output_classes(tmp_path: Path) -> None:

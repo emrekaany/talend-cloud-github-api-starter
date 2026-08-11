@@ -300,14 +300,19 @@ def _write_json(path: Path, payload: Mapping[str, Any], mode: int) -> None:
         raise
 
 
+def _is_windows_junction(directory_stat: object) -> bool:
+    junction_tag = getattr(stat, "IO_REPARSE_TAG_MOUNT_POINT", None)
+    reparse_tag = getattr(directory_stat, "st_reparse_tag", None)
+    return junction_tag is not None and reparse_tag == junction_tag
+
+
 def _prepare_output_directory(destination: Path) -> None:
     with suppress(FileExistsError):
         destination.mkdir(parents=True, mode=0o700, exist_ok=False)
     directory_stat = destination.lstat()
-    is_junction = getattr(destination, "is_junction", None)
     if (
         stat.S_ISLNK(directory_stat.st_mode)
-        or (is_junction is not None and is_junction())
+        or _is_windows_junction(directory_stat)
         or not stat.S_ISDIR(directory_stat.st_mode)
     ):
         raise ValidationError("Output destination must be a real directory")

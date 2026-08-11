@@ -14,4 +14,4 @@ __all__ = [
     "parse_talend_job",
 ]
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
