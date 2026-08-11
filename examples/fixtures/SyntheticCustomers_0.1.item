@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<talendfile:ProcessType
+    xmlns:talendfile="platform:/resource/org.talend.model/model/TalendFile.xsd">
+  <node componentName="tFixedFlowInput" componentVersion="0.102">
+    <elementParameter field="TEXT" name="UNIQUE_NAME" value="tFixedFlowInput_1" />
+    <metadata connector="FLOW" name="tFixedFlowInput_1" />
+  </node>
+  <node componentName="tLogRow" componentVersion="0.101">
+    <elementParameter field="TEXT" name="UNIQUE_NAME" value="tLogRow_1" />
+    <metadata connector="FLOW" name="tLogRow_1" />
+  </node>
+  <connection connectorName="FLOW"
+              source="tFixedFlowInput_1"
+              target="tLogRow_1"
+              label="row1" />
+</talendfile:ProcessType>

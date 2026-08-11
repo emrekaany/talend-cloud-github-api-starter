@@ -1,0 +1,77 @@
+name: Bug report (synthetic data only)
+description: Report a reproducible problem without secrets, client files, live IDs, or private URLs.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve the starter.
+
+        **Public-data rule:** never paste or attach tokens, headers, environment dumps, client/employer files, logs, screenshots, real `.item` / `.properties`, private repository URLs, provider response bodies, or tenant/workspace/project/task/run/user/account IDs. A redacted real file is still not acceptable; reproduce with bundled or newly authored synthetic data.
+
+        For a vulnerability, stop and use the private process in `SECURITY.md`.
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options:
+        - Offline demo
+        - Public GitHub
+        - Local Talend Cloud
+        - Installation or packaging
+        - Documentation
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Package version or commit SHA only; do not include a repository URL.
+      placeholder: 0.1.0 or 0123456
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Local environment
+      description: Operating system and Python version only.
+      placeholder: macOS 15, Python 3.12
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Synthetic reproduction
+      description: Use only bundled demo data or newly created fictional input. Do not attach files from a real project.
+      placeholder: |
+        1. Create a fresh virtual environment.
+        2. Run talend-api-starter demo.
+        3. Observe the sanitized error category ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include only the redacted error category. Do not paste raw HTTP/provider responses or environment output.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Public-safety confirmation
+      options:
+        - label: I used only bundled or newly authored synthetic data.
+          required: true
+        - label: I reviewed this report and every attachment/link for secrets, client material, private URLs, live identifiers, logs, screenshots, and real Talend artifacts.
+          required: true
+        - label: This is not a vulnerability report or production emergency.
+          required: true

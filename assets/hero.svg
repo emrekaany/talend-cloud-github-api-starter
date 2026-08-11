@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="720" viewBox="0 0 1600 720" role="img" aria-labelledby="title desc">
+  <title id="title">Read-only metadata toolkit architecture</title>
+  <desc id="desc">A brand-neutral illustration of cloud metadata and Studio source artifacts flowing through a policy gate into a sanitized summary.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071422"/>
+      <stop offset="0.55" stop-color="#0b2030"/>
+      <stop offset="1" stop-color="#10283a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5eead4"/>
+      <stop offset="1" stop-color="#60a5fa"/>
+    </linearGradient>
+    <linearGradient id="warm" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fde68a"/>
+      <stop offset="1" stop-color="#fb923c"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#020617" flood-opacity="0.45"/>
+    </filter>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" fill="none" stroke="#d8f3ff" stroke-opacity="0.045" stroke-width="1"/>
+    </pattern>
+    <style>
+      .label { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 3px; }
+      .title { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 42px; font-weight: 700; }
+      .body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 23px; font-weight: 500; }
+      .small { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 17px; font-weight: 600; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="720" rx="36" fill="url(#bg)"/>
+  <rect width="1600" height="720" rx="36" fill="url(#grid)"/>
+  <circle cx="1450" cy="-30" r="360" fill="#2563eb" opacity="0.10"/>
+  <circle cx="180" cy="760" r="330" fill="#14b8a6" opacity="0.10"/>
+
+  <g transform="translate(96 74)">
+    <rect width="372" height="42" rx="21" fill="#d8f3ff" fill-opacity="0.08" stroke="#d8f3ff" stroke-opacity="0.18"/>
+    <circle cx="24" cy="21" r="6" fill="#5eead4"/>
+    <text x="44" y="28" class="label" fill="#bfeaf4">PYTHON · GET-ONLY · LOCAL-FIRST</text>
+  </g>
+
+  <text x="96" y="178" class="title" fill="#f8fafc">Understand the metadata.</text>
+  <text x="96" y="228" class="title" fill="url(#accent)">Leave execution out of scope.</text>
+
+  <g transform="translate(96 294)" filter="url(#shadow)">
+    <rect width="430" height="246" rx="26" fill="#0f2a3a" stroke="#5eead4" stroke-opacity="0.35"/>
+    <g transform="translate(34 33)">
+      <circle cx="30" cy="26" r="24" fill="#5eead4" fill-opacity="0.15"/>
+      <path d="M18 32h27c8 0 13-5 13-12s-5-12-12-12c-3-7-9-11-17-11-10 0-18 8-18 18v1C4 17 0 22 0 28c0 8 6 13 18 13" transform="translate(2 5)" fill="none" stroke="#5eead4" stroke-width="3" stroke-linecap="round"/>
+      <text x="78" y="21" class="label" fill="#8ce8dc">CLOUD OPERATIONS</text>
+      <text x="78" y="51" class="body" fill="#f8fafc">workspaces · tasks · runs</text>
+    </g>
+    <line x1="34" y1="111" x2="396" y2="111" stroke="#d8f3ff" stroke-opacity="0.12"/>
+    <g transform="translate(34 138)">
+      <rect width="98" height="40" rx="20" fill="#5eead4" fill-opacity="0.12"/>
+      <text x="24" y="26" class="small" fill="#8ce8dc">GET</text>
+      <rect x="112" width="118" height="40" rx="20" fill="#60a5fa" fill-opacity="0.12"/>
+      <text x="136" y="26" class="small" fill="#9bc7ff">BOUNDED</text>
+      <rect x="244" width="124" height="40" rx="20" fill="#d8f3ff" fill-opacity="0.08"/>
+      <text x="266" y="26" class="small" fill="#c9e7ee">LOCAL</text>
+    </g>
+    <text x="34" y="218" class="small" fill="#91aeb9">operational metadata only</text>
+  </g>
+
+  <g transform="translate(1074 294)" filter="url(#shadow)">
+    <rect width="430" height="246" rx="26" fill="#0f2a3a" stroke="#60a5fa" stroke-opacity="0.35"/>
+    <g transform="translate(34 33)">
+      <rect x="2" y="0" width="52" height="62" rx="8" fill="#60a5fa" fill-opacity="0.14" stroke="#60a5fa" stroke-width="2"/>
+      <path d="M14 19h28M14 31h28M14 43h19" stroke="#9bc7ff" stroke-width="3" stroke-linecap="round"/>
+      <text x="78" y="21" class="label" fill="#9bc7ff">STUDIO SOURCES</text>
+      <text x="78" y="51" class="body" fill="#f8fafc">.item + .properties</text>
+    </g>
+    <line x1="34" y1="111" x2="396" y2="111" stroke="#d8f3ff" stroke-opacity="0.12"/>
+    <g transform="translate(34 138)">
+      <rect width="130" height="40" rx="20" fill="#60a5fa" fill-opacity="0.12"/>
+      <text x="21" y="26" class="small" fill="#9bc7ff">PINNED SHA</text>
+      <rect x="144" width="122" height="40" rx="20" fill="#5eead4" fill-opacity="0.12"/>
+      <text x="165" y="26" class="small" fill="#8ce8dc">SAFE XML</text>
+      <rect x="280" width="88" height="40" rx="20" fill="#d8f3ff" fill-opacity="0.08"/>
+      <text x="302" y="26" class="small" fill="#c9e7ee">PUBLIC</text>
+    </g>
+    <text x="34" y="218" class="small" fill="#91aeb9">structural metadata only</text>
+  </g>
+
+  <g transform="translate(620 330)">
+    <path d="M-72 68H0M360 68h72" fill="none" stroke="url(#accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="8 11"/>
+    <path d="M-2 68l-16-11v22zM362 68l16-11v22z" fill="#76d8dc"/>
+    <rect width="360" height="170" rx="32" fill="#132f3f" stroke="url(#accent)" stroke-width="2" filter="url(#shadow)"/>
+    <path d="M180 27l31 12v28c0 25-13 46-31 56-18-10-31-31-31-56V39z" fill="url(#accent)" fill-opacity="0.16" stroke="#75d7dd" stroke-width="2"/>
+    <path d="M166 67l10 10 20-23" fill="none" stroke="#7ce4d8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="180" y="136" text-anchor="middle" class="label" fill="#d9f5f2">POLICY GATE</text>
+    <text x="180" y="159" text-anchor="middle" class="small" fill="#91aeb9">allowlist · redact · fail closed</text>
+  </g>
+
+  <g transform="translate(456 594)">
+    <rect width="688" height="66" rx="33" fill="#071422" fill-opacity="0.75" stroke="#d8f3ff" stroke-opacity="0.15"/>
+    <circle cx="39" cy="33" r="12" fill="url(#warm)"/>
+    <text x="67" y="41" class="body" fill="#e2eef2">Two outputs: local view + identity-free aggregates.</text>
+  </g>
+</svg>

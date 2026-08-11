@@ -1,0 +1,35 @@
+name: Documentation correction
+description: Report an unclear or incorrect public document using non-sensitive examples only.
+title: "[Docs]: "
+labels:
+  - documentation
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste live commands containing identifiers or attach client files, logs, screenshots, private URLs, tokens, headers, or real Talend artifacts.
+  - type: input
+    id: page
+    attributes:
+      label: Public page or section
+      placeholder: docs/quickstart.md — Public GitHub section
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: What is unclear or incorrect?
+      description: Use only public documentation and fictional examples.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested correction
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Public-safety confirmation
+      options:
+        - label: I reviewed this report and it contains no secret, client material, private URL, live identifier, screenshot, log, or real Talend artifact.
+          required: true

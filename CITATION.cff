@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If this starter helped your work, please cite the repository."
+title: "Talend Cloud + GitHub API Starter"
+type: software
+authors:
+  - family-names: "Yılmaz"
+    given-names: "Emre Kaan"
+repository-code: "https://github.com/emrekaany/talend-cloud-github-api-starter"
+url: "https://github.com/emrekaany/talend-cloud-github-api-starter"
+version: 0.1.0
+date-released: 2026-08-11
+license: MIT
+keywords:
+  - Talend Cloud
+  - Talend Studio
+  - GitHub API
+  - data engineering
+  - metadata
+  - Python

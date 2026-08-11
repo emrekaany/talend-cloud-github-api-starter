@@ -1,0 +1,57 @@
+name: Read-only feature request
+description: Propose a bounded feature without sharing private environment details.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the general problem, not a client environment. Do not include secrets, files, screenshots, logs, private URLs, live resource IDs, or real `.item` / `.properties` content.
+  - type: textarea
+    id: problem
+    attributes:
+      label: General problem
+      description: What read-only metadata question should the starter help answer?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Explain inputs, safe output, and bounded failure behavior using fictional names.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Offline demo
+        - Public GitHub metadata
+        - Talend Cloud GET metadata
+        - Safe parsing or redaction
+        - Documentation or developer experience
+    validations:
+      required: true
+  - type: textarea
+    id: boundary
+    attributes:
+      label: Security-boundary impact
+      description: Does this add a host, endpoint, response field, file type, credential, export, or larger budget?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include a documentation-only or narrower option if one exists.
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Public-safety confirmation
+      options:
+        - label: This request contains no secret, client file, log, screenshot, private URL, live identifier, or real Talend artifact.
+          required: true
+        - label: The request does not require task mutation, source execution, hosted credential entry, or business-row extraction.
+          required: true
