@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Reposition the product as **Talend API + GitHub API CLI** and expose the
+  canonical `talend-api` executable.
+- Replace the visible `cloud` command group with
+  `talend workspaces|tasks|runs`; keep the provider host requirement in the
+  technical setup documentation.
+- Rename the public JSON provider contract to `talend_api` and bump the output
+  schema to `2.0`.
+
+### Added
+
+- Add `local jobs` for bounded, network-free inspection of a local Talend
+  Studio project's `.properties` / `.item` pairs.
+- Add clean-wheel CLI smoke coverage and `--version` support.
+
 ## [0.1.2] - 2026-08-11
 
 ### Fixed

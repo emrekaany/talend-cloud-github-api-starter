@@ -120,6 +120,10 @@ def test_resolves_ref_commit_tree_and_reads_same_snapshot_blobs() -> None:
         request.headers["accept"] == "application/vnd.github+json"
         for request in requests
     )
+    assert all(
+        request.headers["user-agent"] == "talend-api-github-cli/0.2.0"
+        for request in requests
+    )
     assert not any("/contents/" in request.url.path for request in requests)
     assert not any("recursive" in request.url.params for request in requests)
 

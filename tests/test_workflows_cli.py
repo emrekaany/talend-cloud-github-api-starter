@@ -11,8 +11,12 @@ import talend_api_starter.cli as cli
 from talend_api_starter.github import GitHubSnapshot
 from talend_api_starter.outputs import OutputPaths
 from talend_api_starter.synthetic import synthetic_files, write_synthetic_fixtures
-from talend_api_starter.talend_cloud import TalendCloudClient
-from talend_api_starter.workflows import save_cloud_inventory, save_github_jobs
+from talend_api_starter.talend_api import TalendApiClient
+from talend_api_starter.workflows import (
+    save_github_jobs,
+    save_local_jobs,
+    save_talend_inventory,
+)
 
 runner = CliRunner()
 
@@ -38,7 +42,7 @@ class FakeGitHubClient:
         )
 
 
-class FakeCloudClient:
+class FakeTalendClient:
     region = "synthetic-region"
     redaction_secrets: tuple[str, ...] = ()
 
@@ -81,10 +85,10 @@ def test_reusable_github_workflow_parses_and_writes(tmp_path: Path) -> None:
     assert "SyntheticCustomers" not in paths.share_safe.read_text(encoding="utf-8")
 
 
-def test_reusable_cloud_workflows_cover_all_resources(tmp_path: Path) -> None:
-    client = FakeCloudClient()
+def test_reusable_talend_workflows_cover_all_resources(tmp_path: Path) -> None:
+    client = FakeTalendClient()
     for resource in ("workspaces", "tasks", "runs"):
-        paths = save_cloud_inventory(
+        paths = save_talend_inventory(
             client,  # type: ignore[arg-type]
             resource=resource,
             destination=tmp_path / resource,
@@ -101,10 +105,10 @@ def test_reusable_cloud_workflows_cover_all_resources(tmp_path: Path) -> None:
     assert [name for name, _ in client.calls] == ["workspaces", "tasks", "runs"]
 
 
-def test_cloud_workflow_redacts_normalized_environment_token(
+def test_talend_workflow_redacts_normalized_environment_token(
     tmp_path: Path, monkeypatch: Any
 ) -> None:
-    class EchoTokenClient(FakeCloudClient):
+    class EchoTokenClient(FakeTalendClient):
         redaction_secrets = ("secret-token",)
 
         def list_workspaces(self, **kwargs: Any) -> list[dict[str, Any]]:
@@ -112,7 +116,7 @@ def test_cloud_workflow_redacts_normalized_environment_token(
             return [{"message": "provider echoed secret-token"}]
 
     monkeypatch.setenv("TALEND_TOKEN", "  secret-token  ")
-    paths = save_cloud_inventory(
+    paths = save_talend_inventory(
         EchoTokenClient(),  # type: ignore[arg-type]
         resource="workspaces",
         destination=tmp_path,
@@ -122,7 +126,7 @@ def test_cloud_workflow_redacts_normalized_environment_token(
     assert "[REDACTED]" in local_text
 
 
-def test_cloud_workflow_redacts_token_captured_when_client_was_created(
+def test_talend_workflow_redacts_token_captured_when_client_was_created(
     tmp_path: Path, monkeypatch: Any
 ) -> None:
     original_token = "original-secret-token"
@@ -132,11 +136,11 @@ def test_cloud_workflow_redacts_token_captured_when_client_was_created(
             200, json=[{"message": f"provider echoed {original_token}"}]
         )
     )
-    with TalendCloudClient(
+    with TalendApiClient(
         "https://api.eu.cloud.talend.com", transport=transport
     ) as client:
         monkeypatch.setenv("TALEND_TOKEN", "replacement-token")
-        paths = save_cloud_inventory(
+        paths = save_talend_inventory(
             client,
             resource="workspaces",
             destination=tmp_path,
@@ -153,27 +157,42 @@ def test_fixture_writer_uses_package_fixture_bytes(tmp_path: Path) -> None:
     assert item_path.read_bytes() == expected[item_path.name]
 
 
+def test_reusable_local_workflow_is_network_free(tmp_path: Path) -> None:
+    root = tmp_path / "project"
+    fixture_directory = root / "process" / "demo"
+    write_synthetic_fixtures(fixture_directory)
+
+    paths = save_local_jobs(
+        root,
+        path_prefix="process",
+        destination=tmp_path / "output",
+    )
+
+    assert "SyntheticCustomers" in paths.local_view.read_text(encoding="utf-8")
+    assert "SyntheticCustomers" not in paths.share_safe.read_text(encoding="utf-8")
+
+
 def test_cli_live_command_shapes_without_network(
     tmp_path: Path, monkeypatch: Any
 ) -> None:
     output_paths = OutputPaths(tmp_path / "local.json", tmp_path / "share.json")
     github_client = ContextClient()
-    cloud_client = ContextClient()
+    talend_client = ContextClient()
     calls: list[tuple[str, dict[str, Any]]] = []
 
     monkeypatch.setattr(cli, "GitHubPublicClient", lambda: github_client)
-    monkeypatch.setattr(cli, "_cloud_client", lambda base_url: cloud_client)
+    monkeypatch.setattr(cli, "_talend_client", lambda base_url: talend_client)
 
     def fake_github(*_: Any, **kwargs: Any) -> OutputPaths:
         calls.append(("github", kwargs))
         return output_paths
 
-    def fake_cloud(*_: Any, **kwargs: Any) -> OutputPaths:
+    def fake_talend(*_: Any, **kwargs: Any) -> OutputPaths:
         calls.append((str(kwargs["resource"]), kwargs))
         return output_paths
 
     monkeypatch.setattr(cli, "save_github_jobs", fake_github)
-    monkeypatch.setattr(cli, "save_cloud_inventory", fake_cloud)
+    monkeypatch.setattr(cli, "save_talend_inventory", fake_talend)
 
     commands = (
         [
@@ -183,9 +202,9 @@ def test_cli_live_command_shapes_without_network(
             "--path-prefix",
             "process/jobs",
         ],
-        ["cloud", "workspaces", "--environment-name", "Development"],
-        ["cloud", "tasks", "--workspace-id", "workspace-1"],
-        ["cloud", "runs", "--status", "executing", "--last-days", "2"],
+        ["talend", "workspaces", "--environment-name", "Development"],
+        ["talend", "tasks", "--workspace-id", "workspace-1"],
+        ["talend", "runs", "--status", "executing", "--last-days", "2"],
     )
     for command in commands:
         result = runner.invoke(cli.app, command)
@@ -199,15 +218,15 @@ def test_cli_redacts_expected_validation_failure() -> None:
     assert "OWNER/REPOSITORY" in result.output
 
 
-def test_cloud_client_factory_uses_explicit_or_environment_configuration(
+def test_talend_client_factory_uses_explicit_or_environment_configuration(
     monkeypatch: Any,
 ) -> None:
     explicit = object()
     environment = object()
-    monkeypatch.setattr(cli.TalendCloudClient, "__new__", lambda *_: explicit)
-    monkeypatch.setattr(cli.TalendCloudClient, "from_env", lambda **_: environment)
-    assert cli._cloud_client("https://api.eu.cloud.talend.com") is explicit
-    assert cli._cloud_client(None) is environment
+    monkeypatch.setattr(cli.TalendApiClient, "__new__", lambda *_: explicit)
+    monkeypatch.setattr(cli.TalendApiClient, "from_env", lambda **_: environment)
+    assert cli._talend_client("https://api.eu.cloud.talend.com") is explicit
+    assert cli._talend_client(None) is environment
 
 
 def test_module_entrypoint_invokes_app(monkeypatch: Any) -> None:

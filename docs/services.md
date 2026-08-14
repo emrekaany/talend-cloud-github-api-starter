@@ -1,49 +1,63 @@
-# Assistant for Talend
+# From the free CLI to Assistant for Talend
 
-The free starter is intentionally small: it teaches safe, read-only access to operational metadata and public Studio artifacts. **Assistant for Talend** is a separate paid, private offering for teams whose questions depend on proprietary projects, environment-specific semantics, or private deployment constraints.
+The free **Talend API + GitHub API CLI** gives developers a practical, bounded way to learn metadata access, inspect an authorized local Studio project, and explore supported artifacts in public GitHub repositories.
 
-## Free starter vs private engagement
+**Assistant for Talend** is the separate paid, private path for organizations whose questions require proprietary projects, cross-job semantics, migration decisions, data-quality evidence, or a customer-controlled deployment.
 
-| Need | Free public starter | Paid private Assistant for Talend |
+## Clear free/private boundary
+
+| Need | Free public CLI | Paid private Assistant for Talend |
 | --- | --- | --- |
-| Learn a GET-only metadata workflow | Included | Included as part of discovery when relevant |
+| Learn read-only Talend API calls | Included for supported GET metadata | Included in discovery when relevant |
 | Run a credential-free synthetic demo | Included | Not required |
-| Inspect public `.item` / `.properties` structure | Included | Can be extended to approved private sources |
-| Semantic job diff | Not included | Scoped to supported Talend artifacts and revision pairs |
-| Cross-job dependency analysis | Not included | Private dependency and impact mapping |
-| Migration-readiness assessment | Not included | Evidence-based compatibility, risk, and remediation review |
-| Data-quality diagnostics | Not included | Source/schema/runtime evidence review under a private scope |
-| Private GitHub/GitLab/Bitbucket or internal network | Not included | Possible after architecture and access review |
-| Private/on-premises deployment | Not included | Designed around the client's security and residency constraints |
-| Organization-specific report and recommendations | Not included | Defined deliverable with explicit evidence and limitations |
+| Inspect an authorized local Studio project | Bounded supported job structure | Can be extended under an approved private scope |
+| Inspect public GitHub artifacts anonymously | Included | Private source may be possible after access/security review |
+| Semantic job diff | Not included | Scoped comparison of supported artifacts/revisions |
+| Cross-job dependency and impact analysis | Not included | Private dependency mapping and change-impact evidence |
+| Migration-readiness assessment | Not included | Compatibility, risk, and remediation analysis with stated limits |
+| Data-quality diagnostics | Not included | Source/schema/runtime evidence review under an agreed scope |
+| Private repository or internal network | Not included | Possible after architecture and authorization review |
+| Private/on-premises deployment | Not included | Designed around approved security and residency constraints |
+| Organization-specific recommendations | Not included | Defined deliverables, evidence, assumptions, and limitations |
 
-Availability, scope, pricing, deployment model, data handling, and support terms are agreed separately. The public repository makes no SLA, outcome, compatibility, or migration-success guarantee.
+Availability, scope, pricing, deployment, data handling, and support terms are agreed separately. The public repository makes no SLA, compatibility, outcome, or migration-success guarantee.
 
-## A sensible first conversation
+## When the private path makes sense
 
-A useful **non-sensitive** introduction can describe:
+The free CLI is the right starting point when you need to learn the interface, verify a bounded read workflow, or inspect non-sensitive source you can legally use.
 
-- the business question: semantic diff, dependency, migration, data quality, or private deployment;
-- approximate project shape using broad bands rather than names or files;
-- provider and deployment constraints at a high level;
-- desired deliverable and decision date;
-- whether a formal security/procurement review is required.
+Consider a private engagement when the decision depends on questions such as:
 
-For that first conversation, use [GitHub Discussions](https://github.com/emrekaany/talend-cloud-github-api-starter/discussions). Keep the opening message non-sensitive and high-level.
+- Which jobs will be affected by this repository or context change?
+- Which components or patterns create the highest migration risk?
+- Where do schema drift and data-quality failures enter the flow?
+- How should the analysis run inside our network without uploading source?
+- What evidence should engineering, security, and management review before a migration?
 
-## Do not send through public GitHub
+## Start without sharing sensitive data
 
-Never put any of the following in an issue, Discussion, pull request, gist, or other public channel:
+For a first, non-sensitive inquiry, open a GitHub Issue that contains only:
 
-- access token, password, cookie, authorization header, SSH key, or `.env` content;
+- the broad business question (for example, dependency, migration, or data quality);
+- an approximate project-size band, not project or client names;
+- high-level deployment constraints;
+- the desired decision or deliverable;
+- a request to establish a private contact path.
+
+Do not attach files, screenshots, logs, outputs, identifiers, credentials, private URLs, or environment details. A public issue is only a non-sensitive introduction; it does not authorize access or analysis.
+
+## Never send through public GitHub
+
+Never put the following in an issue, pull request, gist, screenshot, or public link:
+
+- PAT, SAT, password, cookie, authorization header, SSH key, or populated `.env`;
 - client/employer files, screenshots, logs, reports, database extracts, or source archives;
-- private repository, clone, tenant, workspace, project, task, run, host, or network identifier;
-- `.item`, `.properties`, `talend.project`, context, connection, SQL, generated Java, or job export;
-- personal, customer, employee, or production data;
-- contract, incident, vulnerability, or procurement material.
+- private repository, clone, tenant, workspace, project, task, run, host, or network identifiers;
+- `.item`, `.properties`, `talend.project`, contexts, connections, SQL, generated Java, or job exports;
+- personal, customer, employee, contract, incident, procurement, or production data.
 
-A private engagement starts only after an approved private channel, scope, authorization, and data-handling path exist. A public message does not authorize access, upload, analysis, or deployment.
+A private engagement begins only after an approved private channel, explicit scope, authorization, and data-handling path exist.
 
-## Product boundary
+## Independence notice
 
-Assistant for Talend does not turn this starter into an unofficial Talend Cloud service and does not imply affiliation with Qlik. Provider support, licensing, and product defects remain with the provider. The private offering focuses on customer-authorized engineering analysis and deployment.
+Assistant for Talend and this CLI are independent offerings. They are not Qlik products, do not imply Qlik affiliation, and do not replace provider support, licensing, or product entitlements. The paid scope focuses on customer-authorized engineering analysis and deployment.

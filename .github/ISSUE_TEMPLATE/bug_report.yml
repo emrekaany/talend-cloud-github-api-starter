@@ -18,8 +18,9 @@ body:
       label: Mode
       options:
         - Offline demo
-        - Public GitHub
-        - Local Talend Cloud
+        - Local Talend Studio project
+        - Public GitHub API
+        - Talend API
         - Installation or packaging
         - Documentation
     validations:
@@ -29,7 +30,7 @@ body:
     attributes:
       label: Version or commit
       description: Package version or commit SHA only; do not include a repository URL.
-      placeholder: 0.1.0 or 0123456
+      placeholder: 0.2.0 or 0123456
     validations:
       required: true
   - type: input
@@ -47,7 +48,7 @@ body:
       description: Use only bundled demo data or newly created fictional input. Do not attach files from a real project.
       placeholder: |
         1. Create a fresh virtual environment.
-        2. Run talend-api-starter demo.
+        2. Run talend-api demo.
         3. Observe the sanitized error category ...
     validations:
       required: true

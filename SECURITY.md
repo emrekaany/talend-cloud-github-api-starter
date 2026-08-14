@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Until stable releases exist, security fixes target the latest code on `main` and the latest published release when practical. Older commits, forks, and modified deployments are not supported automatically.
+Security fixes target the latest code on `main` and the latest published release when practical. Older commits, forks, and modified deployments are not supported automatically.
 
 | Version | Security fixes |
 | --- | --- |
@@ -11,50 +11,52 @@ Until stable releases exist, security fixes target the latest code on `main` and
 
 ## Report a vulnerability privately
 
-Do **not** open a public issue or Discussion for a suspected vulnerability.
+Do **not** open a public issue or pull request for a suspected vulnerability.
 
 1. Use GitHub private vulnerability reporting from this repository's **Security** tab if it is enabled.
-2. If it is not enabled, do not disclose the vulnerability. Use [GitHub Discussions](https://github.com/emrekaany/talend-cloud-github-api-starter/discussions) only to request a private security channel; include no reproduction, affected endpoint, secret, identifier, file, log, or exploit detail.
-3. Wait for an actual private handling path before sharing technical details.
+2. If private vulnerability reporting is unavailable, contact the maintainer only through a private channel the maintainer has already published. Do not invent or guess an address.
+3. If no private maintainer channel is published, do not post technical details publicly. Wait until a private route is available.
 
-Never send an active token, password, cookie, authorization header, private key, client file, real `.item` / `.properties`, live log, database data, private repository URL, tenant/resource ID, or production screenshot. Reproduce with synthetic data whenever possible.
+Never send an active PAT/SAT, password, cookie, authorization header, private key, client file, real `.item` / `.properties`, output from a real project, live log, database data, private repository URL, tenant/resource ID, internal host, or production screenshot. Reproduce with synthetic data whenever possible.
 
-If a secret may already be exposed, revoke or rotate it with the provider immediately; do not wait for a project response.
+If a credential may already be exposed, revoke or rotate it through the authorized provider interface immediately; do not wait for a project response.
 
-## Helpful report contents
+## Helpful private report contents
 
 - affected version or commit SHA;
 - vulnerability class and impacted boundary;
 - minimal steps using synthetic data;
 - expected versus observed security behavior;
-- whether the issue appears to have caused data exposure;
+- whether the issue appears to have caused exposure;
 - a suggested mitigation, if known.
 
-Do not run tests against infrastructure you do not own or have explicit permission to assess. Do not access, modify, retain, or disclose other users' data.
+Do not test infrastructure you do not own or have explicit permission to assess. Do not access, modify, retain, or disclose other users' data.
 
 ## Security boundaries worth reporting
 
-- a non-GET or non-allowlisted network call;
+- a non-GET or non-allowlisted network request;
 - Talend authorization sent to an unapproved host or redirect;
-- a token in logs, exceptions, output, URLs, command arguments, or fixtures;
-- demo mode contacting Talend Cloud or GitHub;
-- traversal outside the requested GitHub path or mixing revisions;
-- DTD/external-entity resolution or execution of embedded source content;
-- request/response/tree/blob budgets that can be bypassed;
-- raw or excluded data entering share-safe output;
-- dependency or packaging behavior that introduces an exploitable boundary break.
+- a credential in logs, exceptions, output, URLs, command arguments, or fixtures;
+- demo or local-project mode contacting a provider;
+- local path traversal outside the selected project/scope;
+- GitHub traversal outside the requested path or mixing revisions;
+- DTD/external-entity resolution or execution of embedded content;
+- request, response, directory, tree, blob, XML, or byte budgets that can be bypassed;
+- raw/excluded data entering share-safe output;
+- packaging or dependency behavior that creates an exploitable boundary break.
 
-Provider account recovery, general access errors, undocumented Talend behavior, feature requests, and ordinary installation problems belong in [SUPPORT.md](SUPPORT.md) unless they expose a security weakness.
+Account recovery, ordinary access errors, provider entitlement questions, undocumented Talend behavior, feature requests, and installation problems belong in [SUPPORT.md](SUPPORT.md) unless they expose a security weakness.
 
 ## Response process
 
-Maintainers will assess reports as capacity allows, keep discussion private while risk remains, and coordinate a fix and disclosure proportionate to impact. This open-source project does not promise an SLA or bug bounty. Please avoid public disclosure until a reasonable remediation discussion has occurred, while recognizing that reporters retain their legal rights.
+Maintainers will assess reports as capacity allows, keep discussion private while risk remains, and coordinate remediation/disclosure proportionate to impact. This open-source project promises no SLA or bug bounty. Please avoid public disclosure during a reasonable remediation discussion while retaining your applicable legal rights.
 
 ## Operational safety
 
-- Use a dedicated, least-privilege PAT when the provider permits it.
-- Run live mode only on a trusted local machine.
+- Confirm the credential type currently supported by the endpoint and use the narrowest account/role scope available.
+- Run Talend API commands only on a trusted local machine.
+- Use only local projects and public repositories you are authorized to inspect.
 - Review source and dependency changes before upgrading.
-- Keep `.env` and shell-history material out of commits.
-- Inspect share-safe output before external sharing; structural metadata can remain sensitive.
-- Follow Qlik, GitHub, employer, and client security policies in addition to this document.
+- Keep populated `.env` files and shell-history material out of commits.
+- Inspect even share-safe output before external sharing; aggregate structure can remain sensitive.
+- Follow Qlik, GitHub, employer, client, and legal policies in addition to this document.

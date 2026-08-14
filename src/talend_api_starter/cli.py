@@ -1,4 +1,4 @@
-"""Typer command surface for the safe starter."""
+"""Typer command surface for the read-only Talend API toolkit."""
 
 from __future__ import annotations
 
@@ -7,20 +7,47 @@ from pathlib import Path
 
 import typer
 
+from ._version import __version__
 from .errors import StarterError
 from .github import GitHubPublicClient, parse_repository_slug
 from .outputs import OutputPaths
-from .talend_cloud import TALEND_BASE_URL_ENV, TalendCloudClient
-from .workflows import save_cloud_inventory, save_demo, save_github_jobs
+from .talend_api import TALEND_BASE_URL_ENV, TalendApiClient
+from .workflows import (
+    save_demo,
+    save_github_jobs,
+    save_local_jobs,
+    save_talend_inventory,
+)
 
 app = typer.Typer(
     no_args_is_help=True,
-    help="Read-only Talend Cloud and public GitHub inventory starter.",
+    help="Read-only Talend API, local Studio, and public GitHub CLI.",
 )
-github_app = typer.Typer(no_args_is_help=True, help="Public GitHub operations.")
-cloud_app = typer.Typer(no_args_is_help=True, help="GET-only Talend Cloud operations.")
+local_app = typer.Typer(no_args_is_help=True, help="Local Talend Studio projects.")
+github_app = typer.Typer(no_args_is_help=True, help="Public GitHub REST API.")
+talend_app = typer.Typer(no_args_is_help=True, help="GET-only Talend APIs.")
+app.add_typer(local_app, name="local")
 app.add_typer(github_app, name="github")
-app.add_typer(cloud_app, name="cloud")
+app.add_typer(talend_app, name="talend")
+
+
+def _version_callback(value: bool) -> None:
+    if value:
+        typer.echo(__version__)
+        raise typer.Exit
+
+
+@app.callback()
+def main(
+    version: bool = typer.Option(
+        False,
+        "--version",
+        callback=_version_callback,
+        is_eager=True,
+        help="Show the installed CLI version and exit.",
+    ),
+) -> None:
+    """Use Talend APIs and inspect Talend Studio metadata safely."""
 
 
 def _run(action: Callable[[], OutputPaths]) -> None:
@@ -33,10 +60,10 @@ def _run(action: Callable[[], OutputPaths]) -> None:
     typer.echo(f"share_safe: {paths.share_safe}")
 
 
-def _cloud_client(base_url: str | None) -> TalendCloudClient:
+def _talend_client(base_url: str | None) -> TalendApiClient:
     if base_url:
-        return TalendCloudClient(base_url)
-    return TalendCloudClient.from_env()
+        return TalendApiClient(base_url)
+    return TalendApiClient.from_env()
 
 
 @app.command()
@@ -48,9 +75,37 @@ def demo(
         help="Directory for local_view.json and share_safe.json.",
     ),
 ) -> None:
-    """Run a network-free demo using clearly synthetic Talend XMI."""
+    """Run a network-free demo using clearly synthetic Talend inputs."""
 
     _run(lambda: save_demo(output_dir))
+
+
+@local_app.command("jobs")
+def local_jobs(
+    root: Path = typer.Argument(
+        ...,
+        exists=True,
+        file_okay=False,
+        readable=True,
+        resolve_path=False,
+        help="Local Talend Studio project root.",
+    ),
+    path_prefix: str = typer.Option(
+        "process", help="Project-relative Talend process directory."
+    ),
+    output_dir: Path = typer.Option(
+        Path("local-output"), "--output-dir", file_okay=False
+    ),
+) -> None:
+    """Inventory local .properties/.item pairs without Git or network."""
+
+    _run(
+        lambda: save_local_jobs(
+            root,
+            path_prefix=path_prefix,
+            destination=output_dir,
+        )
+    )
 
 
 @github_app.command("jobs")
@@ -83,8 +138,8 @@ def github_jobs(
     _run(action)
 
 
-@cloud_app.command("workspaces")
-def cloud_workspaces(
+@talend_app.command("workspaces")
+def talend_workspaces(
     base_url: str | None = typer.Option(
         None,
         "--base-url",
@@ -93,14 +148,14 @@ def cloud_workspaces(
     ),
     environment_name: str | None = typer.Option(None, help="Exact environment name."),
     output_dir: Path = typer.Option(
-        Path("cloud-output/workspaces"), "--output-dir", file_okay=False
+        Path("talend-output/workspaces"), "--output-dir", file_okay=False
     ),
 ) -> None:
-    """GET a bounded page of Talend Cloud workspaces."""
+    """GET a bounded page of Talend workspaces."""
 
     def action() -> OutputPaths:
-        with _cloud_client(base_url) as client:
-            return save_cloud_inventory(
+        with _talend_client(base_url) as client:
+            return save_talend_inventory(
                 client,
                 resource="workspaces",
                 destination=output_dir,
@@ -110,22 +165,22 @@ def cloud_workspaces(
     _run(action)
 
 
-@cloud_app.command("tasks")
-def cloud_tasks(
+@talend_app.command("tasks")
+def talend_tasks(
     base_url: str | None = typer.Option(None, "--base-url", envvar=TALEND_BASE_URL_ENV),
     workspace_id: str | None = typer.Option(None, help="Optional workspace ID."),
     artifact_id: str | None = typer.Option(None, help="Optional artifact ID."),
     limit: int = typer.Option(100, min=1, max=100),
     offset: int = typer.Option(0, min=0, max=1_000),
     output_dir: Path = typer.Option(
-        Path("cloud-output/tasks"), "--output-dir", file_okay=False
+        Path("talend-output/tasks"), "--output-dir", file_okay=False
     ),
 ) -> None:
-    """GET a bounded page of Talend Cloud tasks."""
+    """GET a bounded page of Talend tasks."""
 
     def action() -> OutputPaths:
-        with _cloud_client(base_url) as client:
-            return save_cloud_inventory(
+        with _talend_client(base_url) as client:
+            return save_talend_inventory(
                 client,
                 resource="tasks",
                 destination=output_dir,
@@ -138,8 +193,8 @@ def cloud_tasks(
     _run(action)
 
 
-@cloud_app.command("runs")
-def cloud_runs(
+@talend_app.command("runs")
+def talend_runs(
     base_url: str | None = typer.Option(None, "--base-url", envvar=TALEND_BASE_URL_ENV),
     workspace_id: str | None = typer.Option(None, help="Optional workspace ID."),
     status: str | None = typer.Option(None, help="Optional documented run status."),
@@ -147,14 +202,14 @@ def cloud_runs(
     limit: int = typer.Option(100, min=1, max=100),
     offset: int = typer.Option(0, min=0, max=1_000),
     output_dir: Path = typer.Option(
-        Path("cloud-output/runs"), "--output-dir", file_okay=False
+        Path("talend-output/runs"), "--output-dir", file_okay=False
     ),
 ) -> None:
     """GET bounded task-run history; this command never starts a run."""
 
     def action() -> OutputPaths:
-        with _cloud_client(base_url) as client:
-            return save_cloud_inventory(
+        with _talend_client(base_url) as client:
+            return save_talend_inventory(
                 client,
                 resource="runs",
                 destination=output_dir,

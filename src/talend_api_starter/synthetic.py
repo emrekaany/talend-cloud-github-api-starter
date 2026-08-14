@@ -41,7 +41,7 @@ SYNTHETIC_ITEM = b"""<?xml version="1.0" encoding="UTF-8"?>
 </talendfile:ProcessType>
 """
 
-SYNTHETIC_CLOUD_METADATA: dict[str, list[dict[str, object]]] = {
+SYNTHETIC_TALEND_API_METADATA: dict[str, list[dict[str, object]]] = {
     "workspaces": [
         {
             "id": "synthetic-workspace-001",

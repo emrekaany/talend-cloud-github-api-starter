@@ -13,6 +13,7 @@ from urllib.parse import quote
 
 import httpx
 
+from ._version import USER_AGENT
 from .errors import ApiError, BudgetExceeded, ValidationError
 from .http import DEFAULT_TIMEOUT, BoundedJsonClient
 
@@ -143,7 +144,7 @@ class GitHubPublicClient:
             headers={
                 "Accept": "application/vnd.github+json",
                 "X-GitHub-Api-Version": GITHUB_API_VERSION,
-                "User-Agent": "talend-cloud-github-api-starter/0.1",
+                "User-Agent": USER_AGENT,
             },
             max_requests=max_requests,
             max_response_bytes=max_response_bytes,

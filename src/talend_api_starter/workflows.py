@@ -7,13 +7,14 @@ from pathlib import Path
 from .github import GitHubPublicClient
 from .outputs import (
     OutputPaths,
-    cloud_outputs,
     github_job_outputs,
+    local_job_outputs,
     synthetic_demo_outputs,
+    talend_outputs,
     write_output_bundle,
 )
-from .synthetic import SYNTHETIC_CLOUD_METADATA, synthetic_files
-from .talend_cloud import TalendCloudClient
+from .synthetic import SYNTHETIC_TALEND_API_METADATA, synthetic_files
+from .talend_api import TalendApiClient
 from .xmlsafe import inventory_talend_jobs
 
 
@@ -21,7 +22,9 @@ def save_demo(destination: Path) -> OutputPaths:
     """Run a deterministic offline flow over synthetic files only."""
 
     inventory = inventory_talend_jobs(synthetic_files())
-    local_view, share_safe = synthetic_demo_outputs(inventory, SYNTHETIC_CLOUD_METADATA)
+    local_view, share_safe = synthetic_demo_outputs(
+        inventory, SYNTHETIC_TALEND_API_METADATA
+    )
     return write_output_bundle(destination, local_view, share_safe)
 
 
@@ -42,8 +45,29 @@ def save_github_jobs(
     return write_output_bundle(destination, local_view, share_safe)
 
 
-def save_cloud_inventory(
-    client: TalendCloudClient,
+def save_local_jobs(
+    root: Path,
+    *,
+    path_prefix: str,
+    destination: Path,
+) -> OutputPaths:
+    """Inspect one bounded local Talend Studio project without Git or network."""
+
+    # Imported here so the workflow remains importable while optional source
+    # adapters evolve independently.
+    from .local_project import read_local_job_files
+
+    files = read_local_job_files(root, path_prefix=path_prefix)
+    inventory = inventory_talend_jobs(files)
+    local_view, share_safe = local_job_outputs(
+        path_prefix=path_prefix,
+        inventory=inventory,
+    )
+    return write_output_bundle(destination, local_view, share_safe)
+
+
+def save_talend_inventory(
+    client: TalendApiClient,
     *,
     resource: str,
     destination: Path,
@@ -73,8 +97,8 @@ def save_cloud_inventory(
             offset=offset,
         )
     else:
-        raise ValueError("Unsupported cloud resource")
-    local_view, share_safe = cloud_outputs(
+        raise ValueError("Unsupported Talend API resource")
+    local_view, share_safe = talend_outputs(
         region=client.region,
         resource=resource,
         payload=payload,

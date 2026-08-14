@@ -1,68 +1,74 @@
 # Supported capabilities
 
-This page is the scope contract for the free starter. If a behavior is not listed as supported, treat it as unavailable rather than inferring it from a provider API.
+This page is the scope contract for the free **Talend API + GitHub API CLI**. If a behavior is not listed as supported, treat it as unavailable rather than inferring it from a provider API.
 
 ## Modes
 
-| Mode | Supported input | Network | Credential | Output |
+| Command | Supported input | Network | Credential | Output |
 | --- | --- | --- | --- | --- |
-| Offline demo | Bundled synthetic cloud responses and Studio artifacts | None after installation | None | Local and share-safe synthetic summaries |
-| Public GitHub | Public `owner/repository`, ref, required Talend project path | GET requests to GitHub | None | Pinned revision and safe Studio structural metadata |
-| Local Talend Cloud | Exact official API base URL and local personal access token | GET requests to the validated Talend Cloud host | Required | Operational metadata visible to the caller |
+| `talend-api demo` | Bundled synthetic API responses and Studio artifacts | None after installation | None | Synthetic local/share-safe summaries |
+| `talend-api local jobs` | Authorized local directory plus bounded relative path | None | None | Safe structural metadata from supported local pairs |
+| `talend-api github jobs` | Public `owner/repository`, ref, and required project path | Anonymous GitHub GET | None | Pinned revision and safe structural metadata |
+| `talend-api talend ...` | Exact official regional API base URL and local bearer credential | GET to validated Talend host | Your own supported credential | Operational metadata visible to the caller |
 
-There is no hosted credential mode. Public GitHub repositories are the only Git provider target in this starter.
+There is no hosted credential or file-upload mode. Public GitHub is the only remote source-repository target in this starter.
 
-## Supported Talend Cloud metadata
+## Supported Talend API metadata
 
-Subject to the caller's account, region, roles, and endpoint entitlements, the CLI is designed to read:
+Subject to the caller's account, region, subscription/trial, credential type, roles, and endpoint entitlements, the CLI is designed to read:
 
 - workspaces;
 - executable tasks;
 - recent task execution records.
 
-Only endpoint templates explicitly included in the application allowlist may be called. Provider response fields do not create new call targets.
+Only endpoint templates explicitly included in the application allowlist may be called. Provider response fields cannot create new call targets. The regional host must match `https://api.<region>.cloud.talend.com`.
 
-## Supported Studio source metadata
+This repository does not grant API access. PAT/SAT support and endpoint availability must be confirmed against current Qlik documentation and the caller's authorized account.
 
-For a public GitHub repository and one immutable revision, the CLI is designed to:
+## Supported Talend Studio source metadata
 
-- list bounded `.properties` and `.item` candidates below a required project path;
-- resolve a descriptor's process reference to an exact artifact in the same tree;
-- validate supported filename/version and XMI relationships;
-- report job label/version/status, component types/names, source paths, and pinned revision details in the permission-restricted local view;
-- report only identity-free job/component counts and a warning count in the share-safe view;
-- isolate a malformed artifact instead of executing or trusting its content.
+For an authorized local project or public GitHub path, the CLI is designed to:
 
-Talend formats vary across product versions and project histories. An unknown or ambiguous shape is reported as unsupported; it is not guessed.
+- discover bounded `.properties` and `.item` candidates below a required scope;
+- resolve a descriptor's process reference to an exact artifact;
+- validate supported filename/version and relationship evidence;
+- report safe job/component structure in the permission-restricted local view;
+- report only identity-free job/component counts and warning counts in share-safe output;
+- isolate malformed or unsupported artifacts instead of executing or trusting their content.
+
+GitHub mode additionally pins all accepted source to one immutable revision. Local mode validates path containment and does not invoke Git or Talend.
+
+Talend formats vary across versions and project histories. Unknown, incomplete, contradictory, or ambiguous shapes are reported as unsupported; they are not guessed.
 
 ## Output contracts
 
 | Output | Intended use | May contain | Must not contain |
 | --- | --- | --- | --- |
-| Local view | Inspection in the caller's terminal | Resource names/IDs the caller can already access, subject to command support | Token, authorization header, raw source, embedded code, raw logs |
-| Share-safe summary | Copying into a report or support discussion after human review | Identity-free aggregate counts and allowlisted run status/type buckets | Names/descriptions/tags, raw or hashed identity, repository/ref/path/SHA, timestamps, account identity, filesystem path, context/connection values, raw source |
+| Local view | Inspection by the authorized local operator | Supported resource/job labels, IDs or paths needed by the command | Token, authorization header, raw source, embedded code values, raw logs |
+| Share-safe summary | Candidate for a report after human review | Identity-free aggregate counts and allowlisted run status/type buckets | Names, descriptions, tags, raw/hashed identity, repository/ref/path/SHA, local root, timestamps, account identity, raw source |
 
-Share-safe output is a separate allowlist model. It is not the local view with a few strings removed.
+Share-safe output is a separate allowlist model. It is not the local view with a few strings removed, and it is not automatically safe for public release without review.
 
 ## Intentionally unsupported
 
 | Capability | Status | Reason |
 | --- | --- | --- |
 | Start, stop, pause, publish, update, or delete a task | Not supported | Mutation is outside the public contract |
-| Upload a project, file, log, or fixture | Not supported | No hosted ingestion surface |
-| Read rows moving through a job | Not supported | Provider/source metadata is not business data |
+| Upload a project, file, log, output, or fixture | Not supported | No hosted ingestion surface |
+| Read business rows moving through a job | Not supported | Operational/source metadata is not business data |
 | Execute SQL, Java, shell, mapper expressions, or Talend jobs | Not supported | Source is treated as untrusted data |
-| Download Studio `.item` source from Talend Cloud | Not supported | No verified Cloud-source contract is assumed |
-| Private GitHub, GitLab, or Bitbucket repositories | Not supported | Enterprise auth and private-network access stay outside v1 |
+| Download Studio source through Talend API | Not supported | No verified operational-API source contract is assumed |
+| Private GitHub, GitLab, or Bitbucket authentication | Not supported | Enterprise auth and private-network design remain separate |
 | Deep semantic diff, lineage, dependency, migration, or data-quality analysis | Not in the free starter | Available only as separately scoped private work |
-| Telemetry or analytics | Not included | The starter is local-first and does not need usage tracking |
+| Telemetry, analytics, or hosted token entry | Not included | Local-first operation does not require them |
+| Qlik Talend CommandLine compatibility | Not claimed | `talend-api` is an independent Python CLI, not that separate Qlik product |
 
-## Free does not mean every provider is free
+## Free repository does not mean free provider access
 
-The starter itself has no paid feature gate. Live provider access remains governed by the provider:
+The repository itself has no paid feature gate. Provider access remains governed by each provider:
 
-- Talend Cloud may require a paid account or eligible trial, plus a PAT and endpoint-specific permissions.
-- GitHub permits unauthenticated requests to public resources but applies primary and secondary rate limits.
-- Network, proxy, egress, and enterprise policy costs remain yours.
+- Talend API may require an eligible paid account or trial, a supported PAT or SAT, roles, and endpoint-specific entitlements.
+- GitHub permits anonymous reads of public resources but applies primary and secondary rate limits.
+- Network, proxy, egress, security-review, and enterprise-policy costs remain the user's responsibility.
 
-This repository does not resell, grant, or guarantee access to either provider.
+The project does not resell, grant, or guarantee access to either provider and does not claim that default tests authenticated a live Talend tenant.

@@ -15,8 +15,9 @@ from talend_api_starter.errors import ValidationError
 from talend_api_starter.github import GitHubSnapshot
 from talend_api_starter.outputs import (
     _is_windows_junction,
-    cloud_outputs,
     github_job_outputs,
+    local_job_outputs,
+    talend_outputs,
     write_output_bundle,
 )
 from talend_api_starter.synthetic import synthetic_files
@@ -53,10 +54,10 @@ def test_demo_is_offline_and_writes_two_output_classes(tmp_path: Path) -> None:
     assert share["output_class"] == "share_safe"
     assert local["source"] == {"provider": "offline_synthetic_fixture"}
     assert local["jobs"][0]["properties_path"].startswith("process/demo/")
-    assert local["cloud_metadata"]["tasks"][0]["name"] == "Synthetic Customer Load"
+    assert local["talend_metadata"]["tasks"][0]["name"] == "Synthetic Customer Load"
     assert share["studio_aggregates"]["job_count"] == 1
     assert share["studio_aggregates"] == {"component_count": 2, "job_count": 1}
-    assert share["cloud_aggregates"]["runs"]["record_count"] == 1
+    assert share["talend_aggregates"]["runs"]["record_count"] == 1
     assert "properties_path" not in json.dumps(share)
     assert "SyntheticCustomers" not in json.dumps(share)
     assert "Synthetic Customer Load" not in json.dumps(share)
@@ -72,6 +73,33 @@ def test_typer_demo_command(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     assert (output / "local_view.json").is_file()
     assert (output / "share_safe.json").is_file()
+
+
+def test_cli_version_is_exposed() -> None:
+    result = runner.invoke(app, ["--version"])
+    assert result.exit_code == 0, result.output
+    assert result.output.strip() == "0.2.0"
+
+
+def test_typer_local_command_runs_on_synthetic_project(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    fixture_directory = project / "process" / "demo"
+    fixture_directory.mkdir(parents=True)
+    files = synthetic_files("")
+    for name, content in files.items():
+        (fixture_directory / name).write_bytes(content)
+    output = tmp_path / "local-cli"
+
+    result = runner.invoke(
+        app,
+        ["local", "jobs", str(project), "--output-dir", str(output)],
+    )
+
+    assert result.exit_code == 0, result.output
+    local_text = (output / "local_view.json").read_text(encoding="utf-8")
+    share_text = (output / "share_safe.json").read_text(encoding="utf-8")
+    assert "SyntheticCustomers" in local_text
+    assert "SyntheticCustomers" not in share_text
 
 
 @pytest.mark.skipif(os.name == "nt", reason="Windows symlinks may require privileges")
@@ -112,10 +140,11 @@ def test_output_destination_rejects_untrusted_writable_parent(tmp_path: Path) ->
 
 def test_nested_command_names_are_exposed() -> None:
     commands = (
+        ["local", "jobs", "--help"],
         ["github", "jobs", "--help"],
-        ["cloud", "workspaces", "--help"],
-        ["cloud", "tasks", "--help"],
-        ["cloud", "runs", "--help"],
+        ["talend", "workspaces", "--help"],
+        ["talend", "tasks", "--help"],
+        ["talend", "runs", "--help"],
     )
     for args in commands:
         result = runner.invoke(app, list(args))
@@ -124,7 +153,7 @@ def test_nested_command_names_are_exposed() -> None:
     assert "OWNER/REPOSITORY" in github_help.output
 
 
-def test_cloud_output_redacts_secret_and_allowlists_share_fields() -> None:
+def test_talend_output_redacts_secret_and_allowlists_share_fields() -> None:
     secret = "talend_pat_super_secret"
     payload = {
         "items": [
@@ -146,7 +175,7 @@ def test_cloud_output_redacts_secret_and_allowlists_share_fields() -> None:
         ],
         secret: "secret echoed as a JSON key",
     }
-    local, share = cloud_outputs(
+    local, share = talend_outputs(
         region="eu", resource="runs", payload=payload, secrets=(secret,)
     )
     assert secret not in json.dumps(local)
@@ -163,15 +192,15 @@ def test_cloud_output_redacts_secret_and_allowlists_share_fields() -> None:
     assert "numberOfProcessedRows" not in json.dumps(share)
     assert "numberOfRejectedRows" not in json.dumps(share)
     assert share["source"] == {
-        "provider": "talend_cloud_api",
+        "provider": "talend_api",
         "resource": "runs",
     }
     assert "region" not in share["source"]
 
 
-def test_unknown_cloud_enums_are_bucketed_without_identity_leak() -> None:
+def test_unknown_talend_enums_are_bucketed_without_identity_leak() -> None:
     identity = "customer-secret-status"
-    _, share = cloud_outputs(
+    _, share = talend_outputs(
         region="private-region",
         resource="runs",
         payload={
@@ -200,7 +229,7 @@ def test_unknown_cloud_enums_are_bucketed_without_identity_leak() -> None:
 @pytest.mark.parametrize("resource", ["workspaces", "tasks"])
 def test_workspace_and_task_share_safe_are_count_only(resource: str) -> None:
     identity = "private-name-or-status"
-    _, share = cloud_outputs(
+    _, share = talend_outputs(
         region="private-region",
         resource=resource,
         payload={"items": [{"id": identity, "name": identity, "status": identity}]},
@@ -256,9 +285,26 @@ def test_github_share_safe_excludes_source_and_job_identity() -> None:
     assert share["aggregates"]["job_count"] == 1
 
 
+def test_local_share_safe_excludes_path_and_job_identity() -> None:
+    inventory = inventory_talend_jobs(synthetic_files())
+    _, share = local_job_outputs(
+        path_prefix="process/private-project",
+        inventory=inventory,
+    )
+    rendered = json.dumps(share)
+    assert "private-project" not in rendered
+    assert "SyntheticCustomers" not in rendered
+    assert share["source"] == {"provider": "local_talend_project"}
+    assert share["aggregates"] == {"component_count": 2, "job_count": 1}
+
+
 def test_beginner_examples_import_without_running_network() -> None:
     repository_root = Path(__file__).resolve().parents[1]
-    for name in ("github_inventory.py", "talend_cloud_inventory.py"):
+    for name in (
+        "github_inventory.py",
+        "local_inventory.py",
+        "talend_api_inventory.py",
+    ):
         path = repository_root / "examples" / "python" / name
         spec = importlib.util.spec_from_file_location(f"example_{name}", path)
         assert spec is not None and spec.loader is not None

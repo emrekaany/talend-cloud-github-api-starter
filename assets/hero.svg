@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="720" viewBox="0 0 1600 720" role="img" aria-labelledby="title desc">
   <title id="title">Read-only metadata toolkit architecture</title>
-  <desc id="desc">A brand-neutral illustration of cloud metadata and Studio source artifacts flowing through a policy gate into a sanitized summary.</desc>
+  <desc id="desc">A brand-neutral illustration of Talend API metadata and Studio source artifacts flowing through a policy gate into a sanitized summary.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#071422"/>
@@ -48,7 +48,7 @@
     <g transform="translate(34 33)">
       <circle cx="30" cy="26" r="24" fill="#5eead4" fill-opacity="0.15"/>
       <path d="M18 32h27c8 0 13-5 13-12s-5-12-12-12c-3-7-9-11-17-11-10 0-18 8-18 18v1C4 17 0 22 0 28c0 8 6 13 18 13" transform="translate(2 5)" fill="none" stroke="#5eead4" stroke-width="3" stroke-linecap="round"/>
-      <text x="78" y="21" class="label" fill="#8ce8dc">CLOUD OPERATIONS</text>
+      <text x="78" y="21" class="label" fill="#8ce8dc">TALEND API</text>
       <text x="78" y="51" class="body" fill="#f8fafc">workspaces · tasks · runs</text>
     </g>
     <line x1="34" y1="111" x2="396" y2="111" stroke="#d8f3ff" stroke-opacity="0.12"/>
@@ -68,7 +68,7 @@
     <g transform="translate(34 33)">
       <rect x="2" y="0" width="52" height="62" rx="8" fill="#60a5fa" fill-opacity="0.14" stroke="#60a5fa" stroke-width="2"/>
       <path d="M14 19h28M14 31h28M14 43h19" stroke="#9bc7ff" stroke-width="3" stroke-linecap="round"/>
-      <text x="78" y="21" class="label" fill="#9bc7ff">STUDIO SOURCES</text>
+      <text x="78" y="21" class="label" fill="#9bc7ff">LOCAL + GITHUB</text>
       <text x="78" y="51" class="body" fill="#f8fafc">.item + .properties</text>
     </g>
     <line x1="34" y1="111" x2="396" y2="111" stroke="#d8f3ff" stroke-opacity="0.12"/>

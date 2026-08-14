@@ -13,5 +13,6 @@ htmlcov/
 build/
 dist/
 demo-output/
-cloud-output/
+local-output/
+talend-output/
 github-output/

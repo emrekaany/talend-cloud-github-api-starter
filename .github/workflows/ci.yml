@@ -77,6 +77,14 @@ jobs:
           python -m pip install --upgrade pip build
           python -m build
 
+      - name: Install wheel in a clean virtual environment
+        shell: bash
+        run: |
+          python -m venv wheel-smoke
+          wheel-smoke/bin/python -m pip install dist/*.whl
+          wheel-smoke/bin/talend-api --version
+          wheel-smoke/bin/talend-api demo --output-dir wheel-demo
+
   windows-smoke:
     name: Windows ${{ matrix.python-version }} smoke test
     runs-on: windows-latest
@@ -105,4 +113,4 @@ jobs:
         run: python -m pytest
 
       - name: Run offline demo
-        run: talend-api-starter demo --output-dir windows-demo
+        run: talend-api demo --output-dir windows-demo

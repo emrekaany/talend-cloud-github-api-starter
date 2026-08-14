@@ -1,4 +1,4 @@
-"""Strict, GET-only client for a small Talend Cloud inventory surface."""
+"""Strict, GET-only client for a small Qlik Talend API inventory surface."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 
 import httpx
 
+from ._version import USER_AGENT
 from .errors import ApiError, ConfigurationError, ValidationError
 from .http import DEFAULT_TIMEOUT, BoundedJsonClient
 
@@ -17,6 +18,9 @@ TALEND_TOKEN_ENV = "TALEND_TOKEN"
 TALEND_BASE_URL_ENV = "TALEND_BASE_URL"
 TALEND_API_VERSION = "2021-03"
 
+# Qlik currently hosts the documented Talend Orchestration and Processing APIs
+# on regional cloud.talend.com hosts. This protocol constraint is deliberately
+# separate from the product's public name, "Talend API + GitHub API CLI".
 _OFFICIAL_HOST_RE = re.compile(
     r"^api\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.cloud\.talend\.com$"
 )
@@ -90,23 +94,23 @@ def _validated_record_list(payload: Any, code: str) -> list[Mapping[str, Any]]:
     if not isinstance(payload, list) or any(
         not isinstance(record, Mapping) for record in payload
     ):
-        raise ApiError("talend_cloud", 200, code)
+        raise ApiError("talend_api", 200, code)
     return payload
 
 
 def _validated_page(payload: Any, code: str) -> Mapping[str, Any]:
     if not isinstance(payload, Mapping):
-        raise ApiError("talend_cloud", 200, code)
+        raise ApiError("talend_api", 200, code)
     items = payload.get("items")
     if not isinstance(items, list) or any(
         not isinstance(record, Mapping) for record in items
     ):
-        raise ApiError("talend_cloud", 200, code)
+        raise ApiError("talend_api", 200, code)
     return payload
 
 
-class TalendCloudClient:
-    """Talend Cloud inventory client.
+class TalendApiClient:
+    """Read-only client for documented Talend Orchestration/Processing APIs.
 
     The token has no constructor or method parameter. It is read only from
     ``TALEND_TOKEN`` and is never placed in an exception or output object.
@@ -135,13 +139,13 @@ class TalendCloudClient:
         )
         self._redaction_secrets = (token,)
         self._http = BoundedJsonClient(
-            provider="talend_cloud",
+            provider="talend_api",
             base_url=base_url,
             headers={
                 "Accept": "application/json",
                 "Authorization": f"Bearer {token}",
                 "talend-version": TALEND_API_VERSION,
-                "User-Agent": "talend-cloud-github-api-starter/0.1",
+                "User-Agent": USER_AGENT,
             },
             max_requests=max_requests,
             max_response_bytes=max_response_bytes,
@@ -151,7 +155,7 @@ class TalendCloudClient:
         )
 
     @classmethod
-    def from_env(cls, **kwargs: Any) -> TalendCloudClient:
+    def from_env(cls, **kwargs: Any) -> TalendApiClient:
         base_url = os.environ.get(TALEND_BASE_URL_ENV, "").strip()
         if not base_url:
             raise ConfigurationError(
@@ -172,7 +176,7 @@ class TalendCloudClient:
     def close(self) -> None:
         self._http.close()
 
-    def __enter__(self) -> TalendCloudClient:
+    def __enter__(self) -> TalendApiClient:
         return self
 
     def __exit__(self, *_: object) -> None:

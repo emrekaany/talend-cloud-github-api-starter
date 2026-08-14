@@ -3,15 +3,15 @@ requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
-name = "talend-cloud-github-api-starter"
-version = "0.1.2"
-description = "A safe, read-only starter for Talend Cloud and public GitHub Talend job inventory."
+name = "talend-api-github-cli"
+version = "0.2.0"
+description = "A safe, read-only CLI for Talend APIs and Talend Studio metadata from local projects or public GitHub repositories."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Emre Kaan Yılmaz" }]
-keywords = ["talend", "github-api", "data-engineering", "etl", "read-only"]
+keywords = ["talend", "talend-api", "github-api", "cli", "data-engineering", "etl", "read-only"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
@@ -49,6 +49,7 @@ Issues = "https://github.com/emrekaany/talend-cloud-github-api-starter/issues"
 Documentation = "https://github.com/emrekaany/talend-cloud-github-api-starter#readme"
 
 [project.scripts]
+talend-api = "talend_api_starter.cli:app"
 talend-api-starter = "talend_api_starter.cli:app"
 
 [tool.hatch.build.targets.wheel]

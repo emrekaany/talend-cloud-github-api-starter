@@ -1,30 +1,37 @@
-# Safe examples
+# Safe command-line examples
 
-Every value on this page is synthetic or schematic. Nothing below came from a client, employer, private repository, live tenant, screenshot, benchmark, or customer workload.
+Every value on this page is synthetic or schematic. Nothing came from a client, employer, private repository, live tenant, screenshot, benchmark, or customer workload.
 
 ## Offline demo
 
 ```bash
-talend-api-starter demo
+talend-api demo
 ```
 
-The demo exercises both synthetic paths:
+The demo exercises synthetic Talend API metadata and a synthetic Talend Studio artifact pair:
 
 ```text
-synthetic cloud response    ──▶ cloud metadata model ──┐
-                                                         ├──▶ output policy ──┬──▶ local_view.json
-synthetic .properties/.item ──▶ safe XML parser      ──┘                  └──▶ share_safe.json
+synthetic API response       -> Talend metadata model --+
+                                                       +-> output policy -> local_view.json
+synthetic .properties/.item  -> safe XML parser -------+                 -> share_safe.json
 ```
 
-The exact console formatting is allowed to evolve. The invariant is that demo mode does not call a provider and does not require credentials.
+The command makes no provider request and asks for no credential.
 
-## Actual demo share-safe schema
+## Demo share-safe shape
 
-The bundled demo currently writes this identity-free aggregate shape:
+The bundled fixture currently produces an identity-free shape like this:
 
 ```json
 {
-  "cloud_aggregates": {
+  "output_class": "share_safe",
+  "schema_version": "2.0",
+  "source": {"provider": "offline_synthetic_fixture"},
+  "studio_aggregates": {
+    "component_count": 2,
+    "job_count": 1
+  },
+  "talend_aggregates": {
     "runs": {
       "execution_destination_counts": {"REMOTE_ENGINE": 1},
       "execution_status_counts": {},
@@ -35,58 +42,59 @@ The bundled demo currently writes this identity-free aggregate shape:
     "tasks": {"record_count": 1},
     "workspaces": {"record_count": 1}
   },
-  "output_class": "share_safe",
-  "schema_version": "1.0",
-  "source": {"provider": "offline_synthetic_fixture"},
-  "studio_aggregates": {
-    "component_count": 2,
-    "job_count": 1
-  },
   "warning_count": 0
 }
 ```
 
-These counts describe only bundled synthetic records. They are not performance, scale, customer, or adoption metrics.
+These counts describe bundled synthetic records only. They are not customer evidence, a performance benchmark, a scale claim, or proof of live Talend access.
 
-## Local-only companion
+## Local Talend Studio project
 
-`local_view.json` is written separately and permission-restricted where the filesystem supports it. In demo mode it contains synthetic names and source paths. In live modes it can contain account-visible names/IDs, provider response metadata, or public repository revision/path details. Do not publish it.
+```bash
+talend-api local jobs /path/to/TALEND_PROJECT \
+  --path-prefix process
+```
 
-`share_safe.json` never includes a job label, file path, repository owner/name, ref, commit SHA, workspace/task name, raw ID, or hashed identity. It still requires human review because aggregate types and counts can reveal architecture.
+`/path/to/TALEND_PROJECT` is a placeholder. Use only a project you own or are authorized to inspect. The command is local and makes no Talend or GitHub request.
+
+For a safe practice project, create newly authored synthetic `.properties` / `.item` fixtures. Do not reuse a redacted client file: redaction does not change provenance or publication rights.
 
 ## Public GitHub inspection
 
 ```bash
-talend-api-starter github jobs example-owner/example-repository \
+talend-api github jobs example-owner/example-repository \
   --ref main \
   --path-prefix synthetic-project/process
 ```
 
-Replace the owner, repository, ref, and path with a **public** source you are authorized to inspect. The names above are documentation placeholders; they are not claimed to identify an existing repository.
+The owner, repository, ref, and path are documentation placeholders; they are not claimed to identify an existing repository. Replace them only with public source you are authorized to inspect. GitHub access is anonymous in this starter.
 
-## Talend Cloud reads
+## Talend API reads
 
-After the local environment is configured as described in [Talend Cloud API setup](talend-cloud-api.md):
+After configuring your own authorized account as described in [Talend API setup](talend-api.md):
 
 ```bash
-talend-api-starter cloud workspaces
-talend-api-starter cloud tasks --help
-talend-api-starter cloud runs --help
+talend-api talend workspaces
+talend-api talend tasks --help
+talend-api talend runs --help
 ```
 
-Use `--help` to select a workspace, artifact, status, day window, or page without copying live identifiers into a public report.
+The documentation never supplies a working tenant, regional host, token, workspace ID, task ID, or run ID. Do not paste real values into examples, issues, screenshots, or transcripts.
 
-## Fields excluded from share-safe output
+## Two output classes
 
-The default share-safe contract excludes:
+`local_view.json` is permission-restricted where supported and intended only for the operator. Depending on the command, it may contain account-visible resource names/IDs, public repository revision/path details, or local job labels. Do not publish it.
 
-- token or authorization header;
-- person, email, account, tenant, owner, or repository identity;
-- workspace/project/task/run names and raw IDs;
-- descriptions and tags;
-- clone URLs and filesystem paths;
-- context and connection **values**;
+`share_safe.json` is constructed separately from an identity-free allowlist. It excludes job labels, filesystem paths, repository owner/name, refs, commit SHAs, workspace/task names, raw IDs, and hashed identities. It still requires human review because aggregate types and counts can reveal architecture.
+
+Neither output includes raw Studio XML, executable content, logs, or exception
+bodies. The local Talend API view can include a recursively redacted provider
+response and must remain private. The share-safe contract additionally excludes:
+
+- token, authorization header, cookie, password, or environment dump;
+- person, email, account, tenant, owner, or repository identity from share-safe output;
+- context and connection values;
 - SQL, Java, shell, mapper expressions, and generated code;
-- raw `.item` / `.properties`, provider JSON, log, or exception body.
+- raw or redacted provider JSON and all `.item` / `.properties` content.
 
-Recognized run-status/type buckets and counts can still reveal architecture. Treat even share-safe output as potentially sensitive and obtain the appropriate approval before sharing it.
+If an output unexpectedly contains a secret or excluded field, stop sharing it, rotate the credential if necessary, and use the private vulnerability route in [SECURITY.md](../SECURITY.md).

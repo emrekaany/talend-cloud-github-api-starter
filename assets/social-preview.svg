@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
-  <title id="title">Talend Cloud + GitHub API Starter</title>
-  <desc id="desc">Brand-neutral social preview for a free, read-only Python metadata starter.</desc>
+  <title id="title">Talend API + GitHub API CLI</title>
+  <desc id="desc">Brand-neutral social preview for a free, read-only Python command-line toolkit.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#06131f"/>
@@ -41,14 +41,14 @@
     <text x="43" y="28" class="label" fill="#bfeaf4">METADATA, NOT MUTATIONS</text>
   </g>
 
-  <text x="74" y="195" class="headline" fill="#f8fafc">Talend Cloud + GitHub API Starter</text>
+  <text x="74" y="195" class="headline" fill="#f8fafc">Talend API + GitHub API CLI</text>
   <text x="74" y="249" class="sub" fill="url(#accent)">Free · Read-only · Python</text>
 
   <g transform="translate(74 326)" filter="url(#shadow)">
     <rect width="328" height="176" rx="25" fill="#0e2a3a" stroke="#5eead4" stroke-opacity="0.38"/>
     <circle cx="57" cy="50" r="27" fill="#5eead4" fill-opacity="0.13"/>
     <path d="M40 59h34c9 0 15-6 15-14 0-9-6-15-14-15-4-8-11-13-21-13-12 0-21 9-21 21v2c-8 1-13 7-13 15 0 9 7 15 20 15" fill="none" stroke="#5eead4" stroke-width="3" stroke-linecap="round"/>
-    <text x="104" y="47" class="label" fill="#8ce8dc">CLOUD METADATA</text>
+    <text x="104" y="47" class="label" fill="#8ce8dc">TALEND API</text>
     <text x="104" y="76" class="mono" fill="#d8f3ff">workspaces · tasks · runs</text>
     <line x1="26" y1="108" x2="302" y2="108" stroke="#d8f3ff" stroke-opacity="0.12"/>
     <text x="26" y="144" class="mono" fill="#91aeb9">allowlisted HTTPS GET</text>
@@ -58,7 +58,7 @@
     <rect width="328" height="176" rx="25" fill="#0e2a3a" stroke="#60a5fa" stroke-opacity="0.38"/>
     <rect x="29" y="22" width="53" height="67" rx="8" fill="#60a5fa" fill-opacity="0.12" stroke="#60a5fa" stroke-width="2"/>
     <path d="M41 43h29M41 55h29M41 67h20" stroke="#9bc7ff" stroke-width="3" stroke-linecap="round"/>
-    <text x="104" y="47" class="label" fill="#9bc7ff">STUDIO ARTIFACTS</text>
+    <text x="104" y="47" class="label" fill="#9bc7ff">LOCAL + GITHUB</text>
     <text x="104" y="76" class="mono" fill="#d8f3ff">.item + .properties</text>
     <line x1="26" y1="108" x2="302" y2="108" stroke="#d8f3ff" stroke-opacity="0.12"/>
     <text x="26" y="144" class="mono" fill="#91aeb9">immutable commit · safe XML</text>

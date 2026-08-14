@@ -29,7 +29,7 @@ body:
       options:
         - Offline demo
         - Public GitHub metadata
-        - Talend Cloud GET metadata
+        - Talend API GET metadata
         - Safe parsing or redaction
         - Documentation or developer experience
     validations:

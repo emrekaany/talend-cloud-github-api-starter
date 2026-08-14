@@ -1,27 +1,25 @@
 # Troubleshooting
 
-Start with a safe question: does the offline demo work? It separates installation/parser problems from provider credentials, permissions, network policy, repository visibility, and rate limits.
-
-Use an output directory owned and controlled by your current user. Symlink/junction destinations and unsafe writable directories are rejected; on Windows, final access control still depends on the filesystem DACL.
+Start with the offline demo. It separates package/parser problems from local-path permissions, provider credentials, endpoint entitlements, network policy, repository visibility, and rate limits.
 
 ```bash
-talend-api-starter demo
+talend-api demo
 ```
 
-Do not enable verbose HTTP logging with a live token unless you have verified that authorization headers and response bodies are redacted.
+Do not enable verbose HTTP logging with a live credential unless you have independently verified that authorization headers and response bodies are redacted.
 
 ## Installation
 
-### `talend-api-starter: command not found`
+### `talend-api: command not found`
 
-Confirm that the virtual environment is active and the package is installed into the same Python environment:
+Confirm the virtual environment is active and test the module from the same Python environment:
 
 ```bash
-python -m pip show talend-cloud-github-api-starter
 python -m talend_api_starter --help
+python -m pip list
 ```
 
-If the module form works, reactivate `.venv` or invoke the console script from the environment's `bin` / `Scripts` directory.
+If the module form works, reactivate `.venv` or invoke the executable from the environment's `bin` / `Scripts` directory.
 
 ### Python version error
 
@@ -35,72 +33,103 @@ Use Python 3.10 or newer. Create a new virtual environment with the intended int
 
 ### Demo requests a token or contacts a provider
 
-Stop. That violates the demo contract. Record only the package version, command, operating system, and a sanitized description; then report it through the security route if data may have left the machine. Do not attach packet captures or logs containing local details to a public issue.
+Stop. That violates the demo contract. Record only the installed revision, command, operating system, and a sanitized description. If data may have left the machine, use the private vulnerability route in [SECURITY.md](../SECURITY.md). Do not attach packet captures or logs containing local details to a public issue.
 
 ### Demo reports unsupported XML
 
-Bundled fixtures should remain supported. Reinstall from a clean checkout of the same revision and rerun. If it persists, open a bug with the commit SHA and error category; the repository already contains the synthetic fixture, so do not attach any real Talend file.
+Bundled fixtures should remain supported. Reinstall from a clean copy of the same revision and rerun. If it persists, open a bug using the bundled fixture's command and redacted error category; do not attach any real Talend file.
 
-## Talend Cloud
+## Local project
+
+### Project path not found or not a directory
+
+Pass an existing directory you are authorized to read:
+
+```bash
+talend-api local jobs /path/to/TALEND_PROJECT --path-prefix process
+```
+
+Do not paste an actual private path into an issue. Reproduce the behavior in a temporary synthetic directory.
+
+### Path prefix rejected
+
+The prefix is relative to the selected project root. Use a normalized path such as `process`; do not use an absolute path, `..`, control characters, or an escape through a symlink or other indirection.
+
+### No supported jobs found
+
+Confirm that the selected prefix contains Talend Studio process descriptors and matching `.item` artifacts in a supported shape. The CLI does not infer a pair from similar filenames alone. Use a newly authored synthetic pair to test the parser without exposing a real project.
+
+### Local budget exceeded
+
+Choose a narrower project root or prefix. Budgets protect against accidental broad scans; do not bypass them by moving private artifacts into public fixtures.
+
+## Talend API
 
 ### Missing configuration
 
-Set `TALEND_BASE_URL` and `TALEND_TOKEN` in the same shell that runs the command. The project does not load `.env` automatically.
+Set `TALEND_BASE_URL` and `TALEND_TOKEN` in the same shell that runs `talend-api talend ...`. The project does not load `.env` automatically.
 
-```bash
-printf '%s\n' "$TALEND_BASE_URL"
+Never print the token to test it. Check only whether the variable is set using a shell method that does not echo its value.
+
+### Base URL rejected
+
+Use the exact regional API root assigned to your account. It must match:
+
+```text
+https://api.<region>.cloud.talend.com
 ```
 
-Never print the token to test it. If you are unsure whether it is set, check only whether the variable is empty using a shell-safe method that does not echo the value.
+Remove paths, queries, fragments, URL credentials, custom ports, and trailing provider endpoints. Do not post a real tenant-specific configuration or shell transcript publicly.
 
 ### `authentication_failed` / HTTP 401
 
-- Confirm the PAT has not expired or been revoked.
-- Confirm there are no newline characters around the token.
-- Confirm the selected region belongs to the account.
-- Recreate the token if exposure is possible.
+- Confirm the credential has not expired or been revoked.
+- Confirm the token value has no surrounding newline.
+- Confirm the regional host belongs to the authorized account.
+- Check current Qlik documentation to verify whether the endpoint accepts your PAT, SAT, or other configured credential type.
+- Rotate the credential immediately if exposure is possible.
 
-Do not paste the token or provider error body into an issue.
+Automated mock-transport tests cannot prove that a live tenant accepts your credential.
 
 ### `forbidden` / HTTP 403
 
-Authentication may have succeeded while the account lacks the role, workspace membership, subscription feature, or endpoint entitlement. Ask your authorized Talend administrator or Qlik support using their approved private channel. A different token is not automatically the correct fix.
+Authentication may have succeeded while the account lacks a role, workspace membership, subscription feature, or endpoint entitlement. Use the approved private route to your Talend administrator or Qlik support. Trying unrelated credentials is not automatically a valid fix.
 
 ### `not_found` / HTTP 404
 
-The resource may not exist in the selected region, may be outside your account scope, or may be hidden by permissions. Verify the region and selectors locally. Do not post IDs publicly.
+The resource may not exist in the selected region, may be outside account scope, or may be hidden by permissions. Verify region and selectors locally. Do not post identifiers publicly.
 
 ### `rate_limited` / HTTP 403 or 429
 
-Respect the provider's reset or `Retry-After` guidance. Reduce repeated calls and page size. The starter does not bypass provider limits.
+Respect provider reset or `Retry-After` guidance. Reduce repeated calls and page size. The CLI does not bypass provider limits.
 
 ## Public GitHub
 
 ### Repository or ref not found
 
-Confirm the repository is public and the owner, repository, and ref are spelled correctly. Private repository URLs are outside scope and should never be posted as examples.
+Confirm that the repository is public and the owner, repository, and ref are spelled correctly. Private repository authentication is outside scope; never post a private URL as an example.
 
 ### Path prefix not found
 
-The path is repository-relative and case-sensitive. It must identify a directory, not a file, and must not start or end with `/`.
+The path is repository-relative and case-sensitive. It must identify a directory and use normalized `/` separators.
 
-### Budget exceeded
+### Budget exceeded or incomplete tree
 
-Choose a narrower project/process path. Safety budgets are part of the product contract; do not work around them by downloading and posting client artifacts.
+Choose a narrower project/process path. Safety ceilings are part of the command contract. Do not work around them by downloading and posting client artifacts.
 
 ### Unsupported pair or format
 
-Talend project versions and histories can encode relationships differently. Build the smallest **synthetic** reproduction you can legally publish. Never attach a real `.item` or `.properties` file, even if you believe it contains no secret.
+Talend versions and repository histories can encode relationships differently. Build the smallest **newly authored synthetic** reproduction you can legally publish. Never attach a real `.item` or `.properties` file, even if you believe it contains no secret.
 
-## What a public bug report may contain
+## What a public issue may contain
 
-- package version or commit SHA;
+- installed version or commit SHA;
 - operating system and Python version;
-- command name and mode, without live identifiers;
+- command name and mode, without real paths or identifiers;
 - redacted error category;
-- steps using only bundled or newly created synthetic fixtures;
+- steps using bundled or newly created synthetic fixtures;
 - expected versus actual behavior.
 
-It must not contain tokens, headers, environment dumps, client/employer names, live tenant/resource IDs, private URLs, provider response bodies, raw source, screenshots, logs, or files derived from a real project.
+It must not contain credentials, headers, environment dumps, client/employer names, live IDs, real regional hosts, private URLs, provider response bodies, raw source, outputs, screenshots, logs, or files derived from a real project.
 
-Use [SUPPORT.md](../SUPPORT.md) to choose the right channel and [SECURITY.md](../SECURITY.md) for vulnerabilities.
+Use [SUPPORT.md](../SUPPORT.md) for public support scope and [SECURITY.md](../SECURITY.md) for the private vulnerability route.

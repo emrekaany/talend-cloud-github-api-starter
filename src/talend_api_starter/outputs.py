@@ -17,7 +17,7 @@ from .errors import ValidationError
 from .github import GitHubSnapshot
 from .xmlsafe import InventoryResult, JobDescriptor
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "2.0"
 REDACTED = "[REDACTED]"
 _SENSITIVE_KEY_PARTS = (
     "authorization",
@@ -174,9 +174,37 @@ def github_job_outputs(
     return local_view, share_safe
 
 
+def local_job_outputs(
+    *,
+    path_prefix: str,
+    inventory: InventoryResult,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Build local-only details and an identity-free aggregate projection."""
+
+    local_view = {
+        "schema_version": SCHEMA_VERSION,
+        "output_class": "local_view",
+        "source": {
+            "provider": "local_talend_project",
+            "path_prefix": path_prefix,
+        },
+        "job_count": len(inventory.jobs),
+        "jobs": [_job_local(job) for job in inventory.jobs],
+        "warnings": list(inventory.warnings),
+    }
+    share_safe = {
+        "schema_version": SCHEMA_VERSION,
+        "output_class": "share_safe",
+        "source": {"provider": "local_talend_project"},
+        "aggregates": _job_aggregates(inventory.jobs),
+        "warning_count": len(inventory.warnings),
+    }
+    return local_view, share_safe
+
+
 def synthetic_demo_outputs(
     inventory: InventoryResult,
-    cloud_metadata: Mapping[str, Any],
+    talend_metadata: Mapping[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     local_view = {
         "schema_version": SCHEMA_VERSION,
@@ -185,16 +213,16 @@ def synthetic_demo_outputs(
         "job_count": len(inventory.jobs),
         "jobs": [_job_local(job) for job in inventory.jobs],
         "warnings": list(inventory.warnings),
-        "cloud_metadata": redact_payload(cloud_metadata),
+        "talend_metadata": redact_payload(talend_metadata),
     }
     share_safe = {
         "schema_version": SCHEMA_VERSION,
         "output_class": "share_safe",
         "source": {"provider": "offline_synthetic_fixture"},
         "studio_aggregates": _job_aggregates(inventory.jobs),
-        "cloud_aggregates": {
-            resource: _cloud_aggregates(resource, payload)
-            for resource, payload in cloud_metadata.items()
+        "talend_aggregates": {
+            resource: _talend_aggregates(resource, payload)
+            for resource, payload in talend_metadata.items()
             if resource in {"workspaces", "tasks", "runs"}
         },
         "warning_count": len(inventory.warnings),
@@ -213,7 +241,7 @@ def _records(payload: Any) -> list[Mapping[str, Any]]:
     return []
 
 
-def _cloud_aggregates(resource: str, payload: Any) -> dict[str, Any]:
+def _talend_aggregates(resource: str, payload: Any) -> dict[str, Any]:
     records = _records(payload)
     aggregates: dict[str, Any] = {"record_count": len(records)}
     if resource == "runs":
@@ -234,7 +262,7 @@ def _cloud_aggregates(resource: str, payload: Any) -> dict[str, Any]:
     return aggregates
 
 
-def cloud_outputs(
+def talend_outputs(
     *,
     region: str,
     resource: str,
@@ -242,12 +270,12 @@ def cloud_outputs(
     secrets: Iterable[str] = (),
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     if resource not in {"workspaces", "tasks", "runs"}:
-        raise ValueError("Unsupported cloud resource")
+        raise ValueError("Unsupported Talend API resource")
     local_view = {
         "schema_version": SCHEMA_VERSION,
         "output_class": "local_view",
         "source": {
-            "provider": "talend_cloud_api",
+            "provider": "talend_api",
             "region": region,
             "resource": resource,
         },
@@ -257,10 +285,10 @@ def cloud_outputs(
         "schema_version": SCHEMA_VERSION,
         "output_class": "share_safe",
         "source": {
-            "provider": "talend_cloud_api",
+            "provider": "talend_api",
             "resource": resource,
         },
-        "aggregates": _cloud_aggregates(resource, payload),
+        "aggregates": _talend_aggregates(resource, payload),
     }
     return local_view, share_safe
 
