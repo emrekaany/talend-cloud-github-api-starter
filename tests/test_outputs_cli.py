@@ -329,7 +329,7 @@ def test_windows_output_path_skips_posix_permission_operations(
         raise AssertionError("POSIX fchmod must not run on Windows")
 
     monkeypatch.setattr(outputs.os, "name", "nt")
-    monkeypatch.setattr(outputs.os, "fchmod", fail_fchmod)
+    monkeypatch.setattr(outputs.os, "fchmod", fail_fchmod, raising=False)
 
     paths = write_output_bundle(
         destination,

@@ -631,6 +631,14 @@ def test_huge_content_length_is_rejected_without_integer_conversion_failure() ->
             "json_complexity_budget_exceeded",
         ),
     ],
+    ids=[
+        "surrogate-value",
+        "surrogate-key",
+        "nan",
+        "infinite-number",
+        "depth-budget",
+        "node-budget",
+    ],
 )
 def test_json_parser_rejects_nonstandard_unicode_and_complexity(
     payload: bytes,
