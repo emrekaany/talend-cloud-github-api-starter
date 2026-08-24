@@ -42,7 +42,7 @@ flowchart TB
 | Local project provider | Read bounded supported artifact candidates below an authorized path | Traverse escapes, follow source as code, or run Talend/Git |
 | GitHub provider | Resolve one ref and read bounded public tree/blob data | Authenticate private repositories, clone, execute, or mix revisions |
 | Talend API provider | Read allowlisted operational metadata from the exact validated host | Mutate resources or claim access beyond the caller's entitlement |
-| HTTP policy | Enforce host, GET method, redirects, timeouts, response size, and request budgets | Follow redirects or retry without a caller decision |
+| HTTP policy | Enforce host, GET method, redirects, timeouts, response size, request budgets, and provider-specific retry policy | Follow redirects or retry an unapproved status outside the fixed request budget |
 | Pairing/parser | Validate `.properties` / `.item` evidence and extract structural metadata | Resolve entities or execute embedded SQL, Java, shell, or expressions |
 | Output policy | Build a local view and a separate identity-free projection | Serialize raw provider objects or XML into share-safe output |
 

@@ -76,7 +76,7 @@ def test_workspaces_is_get_only_and_sends_pat_in_header() -> None:
     assert request.url.host == "api.eu.cloud.talend.com"
     assert request.headers["authorization"] == "Bearer talend_pat_super_secret"
     assert request.headers["talend-version"] == TALEND_API_VERSION
-    assert request.headers["user-agent"] == "talend-api-github-cli/0.2.0"
+    assert request.headers["user-agent"] == "talend-api-github-cli/0.2.1"
     assert request.url.params["query"] == "environment.name==Development"
     assert "limit" not in request.url.params
     assert "offset" not in request.url.params

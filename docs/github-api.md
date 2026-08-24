@@ -12,6 +12,12 @@ talend-api github jobs OWNER/REPOSITORY \
 
 Use a path as close as practical to the relevant project's `process` directory. `OWNER/REPOSITORY`, `main`, and `path/to/...` are placeholders; replace them only with public source you are authorized to inspect.
 
+In published `v0.2.0`, a bare ref is a branch name; use
+`refs/tags/v0.2.0` for a tag. The current `v0.2.1` source improves this by
+trying a branch first and then a tag only when that branch is absent.
+In every version, use `refs/heads/main`, `refs/tags/v0.2.0`, or an exact
+40-character commit SHA when you want an unambiguous target.
+
 This starter's GitHub mode is anonymous and public-only. There is no GitHub token field, private-repository authentication, clone, checkout, submodule execution, or workflow trigger.
 
 ## Read sequence
@@ -33,7 +39,7 @@ The implementation uses the versioned GitHub REST [Git References](https://docs.
 
 A branch can move between requests. The client therefore:
 
-1. normalizes the requested branch or tag;
+1. validates the requested SHA or resolves the version-supported branch/tag form;
 2. resolves it to a commit SHA;
 3. reads the root tree SHA from that commit;
 4. descends the requested path using tree SHAs;
@@ -43,7 +49,18 @@ It does not resolve `main` again during the scan. This prevents one result from 
 
 ## Scope and budgets
 
-The reader enforces finite request, response-byte, tree-entry, depth, blob-count, per-blob, and total decoded-byte ceilings. Use `talend-api github jobs --help` and the installed revision as the source of truth for current values.
+The reader enforces finite request, response-byte, tree-entry, depth,
+blob-count, per-blob, and total decoded-byte ceilings. In the current release
+line, one command may issue at most **40 GitHub requests**. The code in the
+installed revision is the source of truth; budgets are intentionally not
+user-expandable CLI options.
+
+Published `v0.2.0` stops safely on temporary `502`, `503`, and `504` responses
+without an automatic retry. The current `v0.2.1` source retries only those
+statuses at most twice with a short bounded backoff. Every attempt
+consumes the same 40-request budget. It does not retry authentication,
+authorization, not-found, validation, rate-limit, or malformed-response
+failures.
 
 A scan that reaches a ceiling stops instead of reporting an incomplete inventory as complete. Narrow the path rather than bypassing a budget.
 
@@ -69,6 +86,7 @@ Neither label removes the need for human review. Public source can still contain
 | --- | --- | --- |
 | `not_found` | Repository, ref, or path is absent or not public | Confirm spelling and public visibility without posting a private URL |
 | `rate_limited` | GitHub refused more anonymous calls | Wait for reset and narrow the path |
+| `temporarily_unavailable` (`v0.2.1` source) | GitHub still returned 502/503/504 after bounded retries; published `v0.2.0` reports these as `unexpected_status` | Wait and rerun the same narrow request; do not treat missing output as an empty inventory |
 | request/tree/blob budget error | The selected scope exceeds a local ceiling | Select a smaller Talend project/process subtree |
 | truncated/incomplete tree | GitHub did not return complete evidence | Stop; do not label the result complete |
 | unsupported/pair mismatch | Encoding or artifact relationship cannot be proven safely | Create a new synthetic minimal reproduction |
@@ -77,6 +95,16 @@ See [Troubleshooting](troubleshooting.md) for safe issue contents.
 
 ## Provider and legal limits
 
-Anonymous GitHub requests are subject to primary and secondary rate limits; use GitHub's current [REST API rate-limit documentation](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api) as the authority.
+GitHub currently documents a primary limit of **60 unauthenticated REST
+requests per hour per originating IP**, plus secondary limits. A shared runner,
+VPN exit, or office network may therefore begin with less than 60 remaining
+requests. The CLI does not accept a token to raise that limit. Use GitHub's
+current [REST API rate-limit documentation](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api)
+as the authority.
+
+Remote clients ignore ambient proxy environment variables so credentials and
+request routing are not silently delegated to an unreviewed local proxy. The
+offline demo and local-project mode remain available on networks that require
+an unsupported proxy path.
 
 Public visibility is not permission to copy, republish, or misuse repository content. Inspect only source you are authorized to analyze and follow its license, repository policy, employer/client obligations, and applicable law.

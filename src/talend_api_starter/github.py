@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import binascii
 import re
+import time
 from collections import deque
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -66,6 +67,18 @@ def normalize_git_ref(ref: str) -> str:
     return ref
 
 
+def _git_ref_candidates(ref: str) -> tuple[str, ...]:
+    """Return one explicit ref, or branch-then-tag candidates for a bare name."""
+
+    raw_ref = ref.strip()
+    normalized_ref = normalize_git_ref(raw_ref)
+    if _SHA_RE.fullmatch(normalized_ref) or raw_ref.startswith(
+        ("refs/", "heads/", "tags/")
+    ):
+        return (normalized_ref,)
+    return (normalized_ref, normalize_git_ref(f"tags/{raw_ref}"))
+
+
 def validate_path_prefix(path_prefix: str) -> str:
     path_prefix = path_prefix.strip()
     if not path_prefix:
@@ -120,6 +133,8 @@ class GitHubPublicClient:
         max_blobs: int = 100,
         max_blob_bytes: int = 1_000_000,
         max_total_blob_bytes: int = 5_000_000,
+        max_transient_retries: int = 2,
+        retry_delay_seconds: float = 0.25,
         timeout: httpx.Timeout = DEFAULT_TIMEOUT,
         transport: httpx.BaseTransport | None = None,
     ) -> None:
@@ -132,11 +147,17 @@ class GitHubPublicClient:
         )
         if any(value < 1 for value in budgets):
             raise ValueError("GitHub scan budgets must be positive")
+        if not 0 <= max_transient_retries <= 3:
+            raise ValueError("GitHub transient retries must be between 0 and 3")
+        if not 0 <= retry_delay_seconds <= 5:
+            raise ValueError("GitHub retry delay must be between 0 and 5 seconds")
         self.max_tree_entries = max_tree_entries
         self.max_depth = max_depth
         self.max_blobs = max_blobs
         self.max_blob_bytes = max_blob_bytes
         self.max_total_blob_bytes = max_total_blob_bytes
+        self.max_transient_retries = max_transient_retries
+        self.retry_delay_seconds = retry_delay_seconds
         self._tree_entries_seen = 0
         self._http = BoundedJsonClient(
             provider="github",
@@ -165,39 +186,74 @@ class GitHubPublicClient:
     def __exit__(self, *_: object) -> None:
         self.close()
 
-    def resolve_ref(self, owner: str, repository: str, ref: str) -> tuple[str, str]:
-        """Resolve ref -> commit SHA -> root tree SHA."""
+    def _get_json(self, path: str) -> Any:
+        """Retry a small, bounded set of temporary gateway failures."""
+
+        for attempt in range(self.max_transient_retries + 1):
+            try:
+                return self._http.get_json(path)
+            except ApiError as exc:
+                retryable = exc.status_code in (502, 503, 504)
+                if not retryable or attempt >= self.max_transient_retries:
+                    raise
+                if self.retry_delay_seconds:
+                    time.sleep(self.retry_delay_seconds * (2**attempt))
+        raise AssertionError("unreachable GitHub retry state")
+
+    def _resolve_ref_details(
+        self, owner: str, repository: str, ref: str
+    ) -> tuple[str, str, str]:
+        """Resolve a ref and retain the exact branch/tag identity used."""
 
         owner = _validate_owner_repo(owner, "owner")
         repository = _validate_owner_repo(repository, "repository")
-        normalized_ref = normalize_git_ref(ref)
+        candidates = _git_ref_candidates(ref)
         root = f"/repos/{owner}/{repository}"
-        if _SHA_RE.fullmatch(normalized_ref):
-            commit_sha = normalized_ref
+        resolved_ref = candidates[0]
+        commit_sha: str | None
+        if _SHA_RE.fullmatch(resolved_ref):
+            commit_sha = resolved_ref
         else:
-            ref_payload = _required_dict(
-                self._http.get_json(
-                    f"{root}/git/ref/{quote(normalized_ref, safe='/')}"
-                ),
-                "invalid_ref_response",
-            )
-            ref_object = _required_dict(
-                ref_payload.get("object"), "invalid_ref_response"
-            )
-            object_type = ref_object.get("type")
-            object_sha = _required_sha(ref_object.get("sha"), "invalid_ref_response")
-            if object_type == "commit":
-                commit_sha = object_sha
-            elif object_type == "tag":
-                commit_sha = self._peel_annotated_tag(root, object_sha)
-            else:
-                raise ApiError("github", 200, "ref_target_not_commit")
+            commit_sha = None
+            for index, candidate in enumerate(candidates):
+                try:
+                    ref_payload = _required_dict(
+                        self._get_json(f"{root}/git/ref/{quote(candidate, safe='/')}"),
+                        "invalid_ref_response",
+                    )
+                except ApiError as exc:
+                    if exc.status_code == 404 and index + 1 < len(candidates):
+                        continue
+                    raise
+                ref_object = _required_dict(
+                    ref_payload.get("object"), "invalid_ref_response"
+                )
+                object_type = ref_object.get("type")
+                object_sha = _required_sha(
+                    ref_object.get("sha"), "invalid_ref_response"
+                )
+                if object_type == "commit":
+                    commit_sha = object_sha
+                elif object_type == "tag":
+                    commit_sha = self._peel_annotated_tag(root, object_sha)
+                else:
+                    raise ApiError("github", 200, "ref_target_not_commit")
+                resolved_ref = candidate
+                break
+            if commit_sha is None:
+                raise ApiError("github", 404, "not_found")
         commit = _required_dict(
-            self._http.get_json(f"{root}/git/commits/{commit_sha}"),
+            self._get_json(f"{root}/git/commits/{commit_sha}"),
             "invalid_commit_response",
         )
         tree = _required_dict(commit.get("tree"), "invalid_commit_response")
         tree_sha = _required_sha(tree.get("sha"), "invalid_commit_response")
+        return commit_sha, tree_sha, resolved_ref
+
+    def resolve_ref(self, owner: str, repository: str, ref: str) -> tuple[str, str]:
+        """Resolve ref -> commit SHA -> root tree SHA."""
+
+        commit_sha, tree_sha, _ = self._resolve_ref_details(owner, repository, ref)
         return commit_sha, tree_sha
 
     def _peel_annotated_tag(self, repository_root: str, tag_sha: str) -> str:
@@ -206,7 +262,7 @@ class GitHubPublicClient:
         current_sha = tag_sha
         for _ in range(5):
             tag_payload = _required_dict(
-                self._http.get_json(f"{repository_root}/git/tags/{current_sha}"),
+                self._get_json(f"{repository_root}/git/tags/{current_sha}"),
                 "invalid_tag_response",
             )
             target = _required_dict(tag_payload.get("object"), "invalid_tag_response")
@@ -229,10 +285,11 @@ class GitHubPublicClient:
     ) -> GitHubSnapshot:
         owner = _validate_owner_repo(owner, "owner")
         repository = _validate_owner_repo(repository, "repository")
-        normalized_ref = normalize_git_ref(ref)
         path_prefix = validate_path_prefix(path_prefix)
         self._tree_entries_seen = 0
-        commit_sha, root_tree_sha = self.resolve_ref(owner, repository, normalized_ref)
+        commit_sha, root_tree_sha, resolved_ref = self._resolve_ref_details(
+            owner, repository, ref
+        )
         prefix_tree_sha = self._descend_prefix(
             owner, repository, root_tree_sha, path_prefix
         )
@@ -241,7 +298,7 @@ class GitHubPublicClient:
         return GitHubSnapshot(
             owner=owner,
             repository=repository,
-            ref=normalized_ref,
+            ref=resolved_ref,
             commit_sha=commit_sha,
             root_tree_sha=root_tree_sha,
             prefix_tree_sha=prefix_tree_sha,
@@ -253,7 +310,7 @@ class GitHubPublicClient:
         self, owner: str, repository: str, tree_sha: str
     ) -> list[dict[str, Any]]:
         payload = _required_dict(
-            self._http.get_json(f"/repos/{owner}/{repository}/git/trees/{tree_sha}"),
+            self._get_json(f"/repos/{owner}/{repository}/git/trees/{tree_sha}"),
             "invalid_tree_response",
         )
         if payload.get("truncated") is True:
@@ -355,7 +412,7 @@ class GitHubPublicClient:
         total_bytes = 0
         for path, sha, declared_size in blobs:
             payload = _required_dict(
-                self._http.get_json(f"/repos/{owner}/{repository}/git/blobs/{sha}"),
+                self._get_json(f"/repos/{owner}/{repository}/git/blobs/{sha}"),
                 "invalid_blob_response",
             )
             if payload.get("encoding") != "base64" or not isinstance(

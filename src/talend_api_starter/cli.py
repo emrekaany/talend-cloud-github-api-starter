@@ -113,7 +113,13 @@ def github_jobs(
     repository: str = typer.Argument(
         ..., help="Public repository in OWNER/REPOSITORY format."
     ),
-    ref: str = typer.Option("main", help="Branch or tag ref to pin."),
+    ref: str = typer.Option(
+        "main",
+        help=(
+            "Branch or tag to pin. Bare names try branch then tag; "
+            "refs/heads/... and refs/tags/... are explicit."
+        ),
+    ),
     path_prefix: str = typer.Option(
         "process", help="Repository-relative Talend process directory."
     ),

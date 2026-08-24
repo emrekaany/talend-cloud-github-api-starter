@@ -9,7 +9,7 @@ Run the synthetic demo first. It verifies the installed package, `talend-api` co
 You need:
 
 - Python 3.10 or newer;
-- Git, or a downloaded copy of the repository;
+- internet access for the initial package/dependency download;
 - a terminal on macOS, Linux, or Windows.
 
 The initial install may download Python packages. After installation, `demo` uses only bundled synthetic metadata and `.item` / `.properties` fixtures. It makes no Talend or GitHub API request.
@@ -17,29 +17,42 @@ The initial install may download Python packages. After installation, `demo` use
 ## macOS or Linux
 
 ```bash
-cd <cloned-repository>
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e .
+python -m pip install "https://github.com/emrekaany/talend-cloud-github-api-starter/archive/refs/tags/v0.2.0.zip"
 talend-api demo
 ```
 
 ## Windows PowerShell
 
 ```powershell
-Set-Location <cloned-repository>
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -e .
+python -m pip install "https://github.com/emrekaany/talend-cloud-github-api-starter/archive/refs/tags/v0.2.0.zip"
 talend-api demo
 ```
 
 If PowerShell blocks the activation script, use the environment executables directly:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -e .
+.\.venv\Scripts\python.exe -m pip install "https://github.com/emrekaany/talend-cloud-github-api-starter/archive/refs/tags/v0.2.0.zip"
 .\.venv\Scripts\talend-api.exe demo
 ```
+
+To keep the documentation and examples locally instead, clone the repository
+and use a normal local install:
+
+```bash
+git clone https://github.com/emrekaany/talend-cloud-github-api-starter.git
+cd talend-cloud-github-api-starter
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install .
+talend-api demo
+```
+
+Editable installation (`python -m pip install -e .`) is for contributors who
+intend to modify the source. Normal users do not need it.
 
 ## What demo success means
 
@@ -78,7 +91,9 @@ talend-api talend tasks --help
 talend-api talend runs --help
 ```
 
-The help in your installed revision is the source of truth for optional selectors, budgets, and output flags.
+The help in your installed revision is the source of truth for optional
+selectors and output flags. Safety budgets are documented in the relevant
+workflow pages and enforced by code; they are not user-expandable CLI options.
 
 ## Inspect a local Talend Studio project
 
@@ -110,6 +125,23 @@ talend-api github jobs OWNER/REPOSITORY \
 ```
 
 The GitHub path is anonymous. It resolves the ref to a commit SHA before reading bounded tree/blob metadata, and it does not clone or execute repository content. Read [GitHub API workflow](github-api.md) before selecting a large repository.
+
+You can exercise this mode against the repository's public synthetic fixtures,
+without a credential:
+
+```bash
+talend-api github jobs emrekaany/talend-cloud-github-api-starter \
+  --ref refs/tags/v0.2.0 \
+  --path-prefix examples/fixtures \
+  --output-dir github-self-test
+```
+
+GitHub's current unauthenticated REST allowance is 60 requests per hour per
+originating IP. One CLI scan stops at 40 requests. A shared runner or office
+network can therefore be rate-limited even when you have made no personal
+request. Published `v0.2.0` stops safely on a temporary gateway response without
+an automatic retry. The current `v0.2.1` source adds a bounded retry policy; see
+[GitHub API workflow](github-api.md) for the versioned behavior.
 
 ## Read Talend API metadata
 

@@ -78,7 +78,7 @@ def test_typer_demo_command(tmp_path: Path) -> None:
 def test_cli_version_is_exposed() -> None:
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0, result.output
-    assert result.output.strip() == "0.2.0"
+    assert result.output.strip() == "0.2.1"
 
 
 def test_typer_local_command_runs_on_synthetic_project(tmp_path: Path) -> None:

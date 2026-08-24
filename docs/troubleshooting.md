@@ -109,6 +109,34 @@ Respect provider reset or `Retry-After` guidance. Reduce repeated calls and page
 
 Confirm that the repository is public and the owner, repository, and ref are spelled correctly. Private repository authentication is outside scope; never post a private URL as an example.
 
+Published `v0.2.0` treats a bare ref as a branch. The current `v0.2.1` source
+tries a branch first and a tag second. In either case, remove
+ambiguity with `refs/heads/main`, `refs/tags/v0.2.0`, or an exact commit SHA.
+
+### `temporarily_unavailable` / HTTP 502, 503, or 504
+
+This category and the bounded retry are in the current `v0.2.1` source.
+Published `v0.2.0` reports these responses as `unexpected_status` and does not
+retry automatically. In either version, wait and repeat the same
+narrow request later. No output is evidence of a completed empty inventory; the
+command deliberately stops instead.
+
+Do not loop aggressively: every retry consumes both the CLI's 40-request scan
+budget and GitHub's provider allowance.
+
+### `rate_limited` / HTTP 403 or 429
+
+Anonymous GitHub REST access is currently limited to 60 requests per hour per
+originating IP, and shared networks may have already consumed it. Wait for the
+provider reset. This public-only starter does not accept a GitHub token.
+
+### Network requires an HTTP proxy
+
+Remote clients deliberately ignore ambient proxy environment variables. If
+your network requires a proxy, use the offline demo or local-project mode, or
+have the remote deployment path reviewed explicitly. Do not disable transport
+controls or paste credentials into a proxy-debug transcript.
+
 ### Path prefix not found
 
 The path is repository-relative and case-sensitive. It must identify a directory and use normalized `/` separators.

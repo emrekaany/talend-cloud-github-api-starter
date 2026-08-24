@@ -6,12 +6,13 @@ Bu repo, Talend operasyon metadata'sını ve Talend Studio proje yapısını sal
 
 ## İki dakikalık güvenli demo
 
-Python 3.10+ ile repo klasöründe:
+Python 3.10+ ile yayınlanmış `v0.2.0` kaynak paketini doğrudan GitHub'dan
+yalıtılmış bir ortama kur:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e .
+python -m pip install "https://github.com/emrekaany/talend-cloud-github-api-starter/archive/refs/tags/v0.2.0.zip"
 talend-api demo
 ```
 
@@ -20,11 +21,25 @@ Windows PowerShell:
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -e .
+python -m pip install "https://github.com/emrekaany/talend-cloud-github-api-starter/archive/refs/tags/v0.2.0.zip"
 talend-api demo
 ```
 
 İlk kurulum Python paketlerini indirebilir. `demo` ise yalnız paket içindeki tamamen sentetik API yanıtlarını ve `.item` / `.properties` örneklerini kullanır. `demo-output/local_view.json` ile `demo-output/share_safe.json` dosyalarını yazar; Talend veya GitHub API'sine istek atmaz, hesap ya da token istemez.
+
+Dokümanları ve örnekleri de yerelde tutmak istersen repoyu klonlayıp normal
+kurulum yap:
+
+```bash
+git clone https://github.com/emrekaany/talend-cloud-github-api-starter.git
+cd talend-cloud-github-api-starter
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install .
+talend-api demo
+```
+
+`python -m pip install -e .` yalnız kaynak kodu değiştirecek katkıcılar içindir.
 
 ## Komut haritası
 
@@ -59,6 +74,22 @@ talend-api github jobs OWNER/REPOSITORY \
 ```
 
 Araç ref'i değişmez bir commit SHA'ya sabitler ve yalnız sınırlı `.item` / `.properties` metadata'sını okur. Repoyu klonlamaz, kodunu çalıştırmaz ve private repo token'ı kabul etmez. Ayrıntı: [GitHub API akışı](github-api.md).
+
+Kurulumdan sonra credentialsız public self-test:
+
+```bash
+talend-api github jobs emrekaany/talend-cloud-github-api-starter \
+  --ref refs/tags/v0.2.0 \
+  --path-prefix examples/fixtures \
+  --output-dir github-self-test
+```
+
+GitHub'ın güncel anonim limiti kaynak IP başına saatte 60 REST isteğidir; bu
+CLI tek taramada en fazla 40 istek yapar. Paylaşılan ağdaki başka kullanım da
+aynı provider kotasını tüketmiş olabilir. Yayındaki `v0.2.0`, geçici
+`502`/`503`/`504` yanıtında otomatik retry yapmadan güvenli biçimde durur.
+Güncel `v0.2.1` kaynak sürümü aynı bütçe içinde en fazla iki retry ekler; iki
+sürüm de eksik sonucu başarılı göstermez.
 
 ## Talend API'yi kendi hesabınla kullan
 

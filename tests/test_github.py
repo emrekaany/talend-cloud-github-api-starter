@@ -121,7 +121,7 @@ def test_resolves_ref_commit_tree_and_reads_same_snapshot_blobs() -> None:
         for request in requests
     )
     assert all(
-        request.headers["user-agent"] == "talend-api-github-cli/0.2.0"
+        request.headers["user-agent"] == "talend-api-github-cli/0.2.1"
         for request in requests
     )
     assert not any("/contents/" in request.url.path for request in requests)
@@ -281,3 +281,132 @@ def test_annotated_tag_is_peeled_to_commit() -> None:
         )
     assert snapshot.commit_sha == COMMIT_SHA
     assert any("/git/tags/" in request.url.path for request in requests)
+
+
+def test_bare_tag_falls_back_after_missing_branch() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        path = request.url.path
+        if path.endswith("/git/ref/heads/v1.0.0"):
+            return httpx.Response(404, json={"message": "not found"})
+        if path.endswith("/git/ref/tags/v1.0.0"):
+            return httpx.Response(
+                200, json={"object": {"type": "commit", "sha": COMMIT_SHA}}
+            )
+        if path.endswith(f"/git/commits/{COMMIT_SHA}"):
+            return httpx.Response(200, json={"tree": {"sha": ROOT_TREE_SHA}})
+        if path.endswith(f"/git/trees/{ROOT_TREE_SHA}"):
+            return httpx.Response(
+                200,
+                json={
+                    "truncated": False,
+                    "tree": [
+                        {"path": "process", "type": "tree", "sha": PROCESS_TREE_SHA}
+                    ],
+                },
+            )
+        if path.endswith(f"/git/trees/{PROCESS_TREE_SHA}"):
+            return httpx.Response(200, json={"truncated": False, "tree": []})
+        raise AssertionError(path)
+
+    with GitHubPublicClient(
+        transport=httpx.MockTransport(handler), retry_delay_seconds=0
+    ) as client:
+        snapshot = client.fetch_job_files(
+            "owner", "repo", ref="v1.0.0", path_prefix="process"
+        )
+
+    assert snapshot.ref == "tags/v1.0.0"
+    requested_paths = [request.url.path for request in requests]
+    assert any(path.endswith("/git/ref/heads/v1.0.0") for path in requested_paths)
+    assert any(path.endswith("/git/ref/tags/v1.0.0") for path in requested_paths)
+
+
+def test_transient_gateway_failures_are_retried_within_budget() -> None:
+    requests: list[httpx.Request] = []
+    normal_handler = fixture_handler(requests)
+    ref_attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal ref_attempts
+        if request.url.path.endswith("/git/ref/heads/main"):
+            ref_attempts += 1
+            if ref_attempts <= 2:
+                requests.append(request)
+                return httpx.Response(504, json={"message": "temporary gateway error"})
+        return normal_handler(request)
+
+    with GitHubPublicClient(
+        transport=httpx.MockTransport(handler), retry_delay_seconds=0
+    ) as client:
+        snapshot = client.fetch_job_files(
+            "owner", "repo", ref="main", path_prefix="process"
+        )
+
+    assert snapshot.commit_sha == COMMIT_SHA
+    assert ref_attempts == 3
+    assert client._http.request_count == len(requests)
+
+
+@pytest.mark.parametrize("provider_status", [502, 503, 504])
+def test_transient_gateway_retry_exhaustion_is_safe_and_bounded(
+    provider_status: int,
+) -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            provider_status, json={"message": "do not expose this body"}
+        )
+
+    with (
+        GitHubPublicClient(
+            transport=httpx.MockTransport(handler),
+            max_transient_retries=1,
+            retry_delay_seconds=0,
+        ) as client,
+        pytest.raises(ApiError) as caught,
+    ):
+        client.fetch_job_files("owner", "repo", ref="main", path_prefix="process")
+
+    assert caught.value.code == "temporarily_unavailable"
+    assert caught.value.status_code == provider_status
+    assert len(requests) == 2
+    assert "do not expose" not in str(caught.value)
+
+
+def test_request_budget_also_caps_transient_retry_attempts() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(504, json={"message": "temporary"})
+
+    with (
+        GitHubPublicClient(
+            max_requests=2,
+            max_transient_retries=3,
+            retry_delay_seconds=0,
+            transport=httpx.MockTransport(handler),
+        ) as client,
+        pytest.raises(BudgetExceeded, match="request_budget_exceeded"),
+    ):
+        client.fetch_job_files("owner", "repo", ref="main", path_prefix="process")
+
+    assert len(requests) == 2
+
+
+@pytest.mark.parametrize(
+    ("retries", "delay"),
+    [(-1, 0), (4, 0), (0, -0.01), (0, 5.01)],
+)
+def test_transient_retry_policy_is_bounded(retries: int, delay: float) -> None:
+    with pytest.raises(ValueError):
+        GitHubPublicClient(
+            max_transient_retries=retries,
+            retry_delay_seconds=delay,
+            transport=httpx.MockTransport(lambda _: httpx.Response(200, json={})),
+        )

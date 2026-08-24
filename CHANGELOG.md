@@ -7,6 +7,22 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Fixed
+
+- Resolve a bare Git ref as a branch first and then as a tag when the branch is
+  absent, while preserving explicit `refs/heads/...`, `refs/tags/...`, and
+  commit-SHA behavior.
+- Classify GitHub `502`, `503`, and `504` responses as temporary provider
+  failures and retry them at most twice inside the existing request budget.
+
+### Changed
+
+- Add verified tagged-source and clone installation paths, a credential-free
+  public smoke target, explicit anonymous rate-limit guidance, and current
+  hosted-release evidence.
+- Prepare package version `0.2.1`; the release tag and distribution-asset
+  publication remain separate steps.
+
 ## [0.2.0] - 2026-08-14
 
 ### Changed

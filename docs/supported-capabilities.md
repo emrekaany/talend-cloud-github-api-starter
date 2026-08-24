@@ -68,7 +68,7 @@ Share-safe output is a separate allowlist model. It is not the local view with a
 The repository itself has no paid feature gate. Provider access remains governed by each provider:
 
 - Talend API may require an eligible paid account or trial, a supported PAT or SAT, roles, and endpoint-specific entitlements.
-- GitHub permits anonymous reads of public resources but applies primary and secondary rate limits.
+- GitHub currently permits 60 unauthenticated REST requests per hour per originating IP and applies additional limits; this CLI stops one scan at 40 requests.
 - Network, proxy, egress, security-review, and enterprise-policy costs remain the user's responsibility.
 
 The project does not resell, grant, or guarantee access to either provider and does not claim that default tests authenticated a live Talend tenant.

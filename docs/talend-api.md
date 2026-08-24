@@ -23,7 +23,12 @@ Talend API is hosted at an account-specific regional URL shaped like:
 https://api.<region>.cloud.talend.com
 ```
 
-Use the exact HTTPS API root documented for your account. The CLI validates the `api.<region>.cloud.talend.com` shape, default HTTPS port, and empty root path. It rejects HTTP, URL credentials, custom ports, paths, queries, fragments, and lookalike host suffixes.
+Use the exact HTTPS API root documented for your account. The CLI validates the
+`api.<region>.cloud.talend.com` domain shape, default HTTPS port, and empty root
+path. It rejects HTTP, URL credentials, custom ports, paths, queries, fragments,
+and lookalike host suffixes. This is a structural safety check, not a live or
+finite allowlist of every region Qlik currently operates; obtain the exact host
+from your authorized account and current Qlik documentation.
 
 The `<region>` text is a placeholder, not a value to copy literally. The examples below use an intentionally non-runnable uppercase placeholder:
 

@@ -63,31 +63,46 @@ notes](docs/architecture.md) for trust boundaries and failure behavior.
 
 ## Quickstart
 
-Prerequisites: Python 3.10+ and a local clone or download of this repository. Package installation may download Python dependencies; the demo itself uses bundled synthetic fixtures and makes no Talend or GitHub request.
+Prerequisite: Python 3.10+. Package installation may download Python
+dependencies; the demo itself uses bundled synthetic fixtures and makes no
+Talend or GitHub request.
+
+The shortest verified path installs the published `v0.2.0` source snapshot
+directly from GitHub into an isolated environment:
 
 ```bash
-cd <cloned-repository>
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e .
+python -m pip install "https://github.com/emrekaany/talend-cloud-github-api-starter/archive/refs/tags/v0.2.0.zip"
 talend-api demo
+python -m json.tool demo-output/share_safe.json
 ```
 
 Windows PowerShell:
 
 ```powershell
-Set-Location <cloned-repository>
-py -3 -m venv .venv
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -e .
+python -m pip install "https://github.com/emrekaany/talend-cloud-github-api-starter/archive/refs/tags/v0.2.0.zip"
 talend-api demo
 ```
 
-The demo writes `demo-output/local_view.json` and `demo-output/share_safe.json` from newly authored synthetic metadata. No account, token, tenant, client file, or provider request is involved.
+Prefer a clone when you want the documentation, examples, or development
+checks locally:
 
 ```bash
-python -m json.tool demo-output/share_safe.json
+git clone https://github.com/emrekaany/talend-cloud-github-api-starter.git
+cd talend-cloud-github-api-starter
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install .
+talend-api demo
 ```
+
+The demo writes `demo-output/local_view.json` and
+`demo-output/share_safe.json` from newly authored synthetic metadata. No
+account, token, tenant, client file, or provider request is involved. Editable
+installation (`python -m pip install -e .`) is reserved for contributors.
 
 Read the [full quickstart](docs/quickstart.md) for installation checks and all four command paths.
 
@@ -134,6 +149,24 @@ talend-api github jobs OWNER/REPOSITORY \
 
 The command uses anonymous GitHub REST API reads, resolves the requested ref to an immutable commit, and reads only bounded metadata under the selected path. It does not clone or execute the repository. Private-repository authentication is intentionally outside this starter.
 
+After installing, this repository provides a credential-free public smoke
+target with synthetic fixtures:
+
+```bash
+talend-api github jobs emrekaany/talend-cloud-github-api-starter \
+  --ref refs/tags/v0.2.0 \
+  --path-prefix examples/fixtures \
+  --output-dir github-self-test
+```
+
+GitHub currently permits **60 unauthenticated REST requests per hour per
+originating IP**, while this CLI stops one scan after at most **40 requests**.
+Shared networks and hosted runners can therefore inherit a depleted provider
+budget. Published `v0.2.0` stops safely on a temporary GitHub `502`, `503`, or
+`504`; it does not retry automatically. The current `v0.2.1` source adds at
+most two retries inside that same budget and still fails safely rather than
+returning a partial inventory.
+
 Read [GitHub API workflow](docs/github-api.md) for revision pinning, budgets, and safe failures.
 
 ### Read Talend API metadata
@@ -175,25 +208,28 @@ See the [complete capability matrix](docs/supported-capabilities.md).
 
 ## Measured evidence
 
-The v0.2.0 release candidate was verified locally on **2026-08-14** using
-macOS and Python 3.14.6. These are reproducibility and engineering-quality
-measurements—not customer results, adoption metrics, or proof of access to a
-live Talend tenant.
+The published `v0.2.0` source snapshot and the current `v0.2.1` source tree
+were independently rechecked on **2026-08-24** without Talend or GitHub
+credentials. These are reproducibility and engineering-quality measurements—not
+customer results, adoption metrics, or proof of access to a live Talend tenant.
 
 | Gate | Observed result |
 | --- | --- |
-| Automated behavior tests | `109 passed` across GitHub, local-project, Talend API, output-policy, workflow, CLI, and XML-safety paths |
-| Statement coverage | `90.92%`, above the enforced `90%` floor |
+| Published download/install | Anonymous HTTPS clone and tagged-source ZIP install succeeded in fresh environments; `v0.2.0` demo and local synthetic-project flows completed |
+| Automated behavior tests | `119 passed` in the current `v0.2.1` source across GitHub, local-project, Talend API, output-policy, workflow, CLI, and XML-safety paths |
+| Statement coverage | `90.80%`, above the enforced `90%` floor |
 | Static quality | Ruff lint and format checks passed; mypy reported no issues in 13 source files |
-| Package build | Source distribution and `talend_api_github_cli-0.2.0-py3-none-any.whl` built successfully |
-| Installed-wheel smoke | The wheel was installed into a fresh temporary environment using the already-verified local dependency set; `talend-api --version` returned `0.2.0` and the offline demo produced both JSON outputs |
-| Public-safety scan | Gitleaks reported no findings in the candidate worktree or its five-commit Git history; the reviewed internal-name and machine-path patterns returned no matches |
+| Package build | Source distribution and wheel built successfully; a fresh-wheel install, `pip check`, version command, and offline demo completed |
+| Public-safety scan | Gitleaks reported no finding in the current source tree or the published Git history; reviewed internal-name, credential, and machine-path patterns returned no match |
+| Hosted checks | Published `v0.2.0` CI and CodeQL runs completed successfully; the badges above show the latest `main` status |
 
-The repository also defines Linux tests for Python 3.10–3.14, Windows smoke
-tests for Python 3.10–3.12, a clean-wheel smoke job, and CodeQL. Those hosted
-checks have **not** run against this unpublished v0.2.0 candidate yet. Live
-Talend authentication and endpoint entitlement also remain unverified because
-no authorized tenant was used for this release check.
+The repository defines Linux tests for Python 3.10–3.14, Windows smoke tests
+for Python 3.10–3.12, a clean-wheel smoke job, and CodeQL. Live Talend
+authentication and endpoint entitlement remain unverified because this review
+correctly used no authorized tenant or secret. An anonymous live GitHub smoke
+was attempted, but GitHub returned transient gateway errors and the shared-IP
+anonymous allowance was then exhausted; local contract tests cover the bounded
+retry and failure behavior without presenting that provider incident as a pass.
 
 ## Limitations
 
@@ -207,6 +243,7 @@ security-certified product or make every output safe to share automatically:
 - XML parsing rejects DTDs and external entities; embedded content is never executed.
 - Share-safe output is built from an allowlist, not by serializing the local view.
 - Redirects, oversized responses, incomplete trees, ambiguous pairs, and unsupported formats fail closed.
+- Remote clients deliberately ignore ambient proxy environment variables; a network that requires an HTTP proxy needs an explicitly reviewed deployment path.
 - No telemetry or hosted token/file ingestion is included.
 
 Review [SECURITY.md](SECURITY.md) and the [security
@@ -217,7 +254,7 @@ model](docs/security-model.md) before live use.
 The repository is free and MIT-licensed. That does **not** make provider access free:
 
 - Talend API use may require an eligible account or trial, a supported PAT or SAT, roles, and endpoint entitlements.
-- Anonymous GitHub API access is subject to GitHub rate limits.
+- Anonymous GitHub API access is subject to GitHub's 60-request/hour/IP primary limit and additional provider limits; one CLI scan has a lower 40-request cap.
 - Your organization's network, licensing, data-handling, and authorization policies still apply.
 
 The project is an educational, read-only metadata starter—not an ETL engine,

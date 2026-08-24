@@ -36,6 +36,8 @@ def status_error(provider: str, response: httpx.Response) -> ApiError:
         code = "not_found"
     elif status == 429:
         code = "rate_limited"
+    elif status in (502, 503, 504):
+        code = "temporarily_unavailable"
     elif 300 <= status < 400:
         code = "redirect_refused"
     else:
