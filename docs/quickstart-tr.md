@@ -4,7 +4,7 @@ Bu repo, Talend operasyon metadata'sını ve Talend Studio proje yapısını sal
 
 `talend-api`, bu repoya ait komuttur; Qlik'in ayrı **Talend CommandLine** ürünü değildir.
 
-## İki dakikalık güvenli demo
+## Güvenli demo
 
 Python 3.10+ ile yayınlanmış `v0.2.0` kaynak paketini doğrudan GitHub'dan
 yalıtılmış bir ortama kur:
@@ -25,7 +25,36 @@ python -m pip install "https://github.com/emrekaany/talend-cloud-github-api-star
 talend-api demo
 ```
 
+PowerShell aktivasyon scriptini engellerse ortamın executable dosyalarını
+doğrudan kullan:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install "https://github.com/emrekaany/talend-cloud-github-api-starter/archive/refs/tags/v0.2.0.zip"
+.\.venv\Scripts\talend-api.exe demo
+```
+
 İlk kurulum Python paketlerini indirebilir. `demo` ise yalnız paket içindeki tamamen sentetik API yanıtlarını ve `.item` / `.properties` örneklerini kullanır. `demo-output/local_view.json` ile `demo-output/share_safe.json` dosyalarını yazar; Talend veya GitHub API'sine istek atmaz, hesap ya da token istemez.
+
+## Demo başarısı neyi kanıtlar?
+
+Başarılı komut iki tamamlanmış dosya yolu yazdırır:
+
+```text
+demo-output/local_view.json
+demo-output/share_safe.json
+```
+
+Kimliksiz, paylaşım için daraltılmış görünümü incele:
+
+```bash
+python -m json.tool demo-output/share_safe.json
+```
+
+Demo başarısı yalnız kurduğun sürümün offline paket, güvenli parser ve çıktı
+akışını kanıtlar. Canlı Talend hesabına veya uzak GitHub reposuna erişimi
+kanıtlamaz. Demo token istemez, provider çağrısı yapmaz ve yalnız sentetik girdi
+kullanır. `local_view` ile `share_safe` yine de kaynaklarına ve hedef kitlelerine
+uygun şekilde saklanmalıdır.
 
 Dokümanları ve örnekleri de yerelde tutmak istersen repoyu klonlayıp normal
 kurulum yap:
@@ -51,6 +80,22 @@ talend-api talend workspaces
 talend-api talend tasks --help
 talend-api talend runs --help
 ```
+
+## Kurulu komut yüzeyini doğrula
+
+```bash
+talend-api --help
+talend-api demo --help
+talend-api local jobs --help
+talend-api github jobs --help
+talend-api talend workspaces --help
+talend-api talend tasks --help
+talend-api talend runs --help
+```
+
+Kurulu sürümündeki `--help`, selector ve çıktı seçenekleri için esas kaynaktır.
+Güvenlik bütçeleri ilgili akış sayfalarında belgelenir ve kod tarafından
+uygulanır; CLI üzerinden genişletilemez.
 
 ## Yerel Talend Studio projesini incele
 
@@ -108,6 +153,38 @@ talend-api talend runs --help
 ```
 
 Otomatik testler sentetik fixture ve mock HTTP transport kullanır; gerçek bir Talend tenant'ına login olunduğunu veya senin subscription/rol/endpoint yetkinin çalıştığını kanıtlamaz.
+
+## İşin bitince temizle
+
+Sanal ortamı kapat:
+
+```bash
+deactivate
+```
+
+Talend değişkenlerini terminalden kaldır:
+
+```bash
+unset TALEND_TOKEN TALEND_BASE_URL
+```
+
+PowerShell:
+
+```powershell
+Remove-Item Env:TALEND_TOKEN -ErrorAction SilentlyContinue
+Remove-Item Env:TALEND_BASE_URL -ErrorAction SilentlyContinue
+```
+
+Environment variable'ı kaldırmak credential'ı iptal etmez. Credential açığa
+çıktıysa yetkili provider arayüzünden hemen iptal et veya yenile.
+
+## Bir şey çalışmazsa
+
+[Sorun giderme](troubleshooting.md) sayfasını kullan. Public bug formunda yalnız
+paket sürümü, işletim sistemi, sentetik tekrar adımları ve güvenli hata kategorisi
+bulunabilir. Token, provider yanıtı, environment dökümü, gerçek `.item` /
+`.properties`, gerçek proje çıktısı, log, private URL veya canlı
+tenant/workspace/task/run kimliği paylaşma.
 
 ## Kesin sınırlar
 

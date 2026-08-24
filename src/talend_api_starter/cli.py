@@ -56,6 +56,10 @@ def _run(action: Callable[[], OutputPaths]) -> None:
     except StarterError as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(code=2) from None
+    except OSError:
+        # Do not expose workstation paths or platform-specific diagnostics.
+        typer.echo("Error: local_io_error", err=True)
+        raise typer.Exit(code=2) from None
     typer.echo(f"local_view: {paths.local_view}")
     typer.echo(f"share_safe: {paths.share_safe}")
 

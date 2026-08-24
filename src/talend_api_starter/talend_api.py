@@ -14,7 +14,8 @@ from ._version import USER_AGENT
 from .errors import ApiError, ConfigurationError, ValidationError
 from .http import DEFAULT_TIMEOUT, BoundedJsonClient
 
-TALEND_TOKEN_ENV = "TALEND_TOKEN"
+# This literal is the environment-variable name, never a credential value.
+TALEND_TOKEN_ENV = "TALEND_TOKEN"  # nosec B105
 TALEND_BASE_URL_ENV = "TALEND_BASE_URL"
 TALEND_API_VERSION = "2021-03"
 
@@ -52,7 +53,10 @@ _ALLOWED_ENDPOINTS = frozenset(
 def validate_official_talend_base_url(base_url: str) -> str:
     """Allow only exact HTTPS API hosts documented by Qlik Talend."""
 
-    parsed = urlsplit(base_url)
+    try:
+        parsed = urlsplit(base_url)
+    except ValueError:
+        raise ValidationError("Talend base URL is invalid") from None
     if parsed.scheme != "https":
         raise ValidationError("Talend base URL must use HTTPS")
     if parsed.username or parsed.password:
@@ -131,7 +135,13 @@ class TalendApiClient:
             raise ConfigurationError(
                 f"Set {TALEND_TOKEN_ENV} in the process environment"
             )
-        if "\r" in token or "\n" in token:
+        try:
+            token.encode("ascii")
+        except UnicodeEncodeError:
+            raise ConfigurationError(
+                f"{TALEND_TOKEN_ENV} contains invalid characters"
+            ) from None
+        if any(ord(character) < 32 or ord(character) == 127 for character in token):
             raise ConfigurationError(f"{TALEND_TOKEN_ENV} contains invalid characters")
         self.base_url = base_url
         self.region = base_url.removeprefix("https://api.").removesuffix(
@@ -179,8 +189,13 @@ class TalendApiClient:
     def __enter__(self) -> TalendApiClient:
         return self
 
-    def __exit__(self, *_: object) -> None:
-        self.close()
+    def __exit__(
+        self,
+        exception_type: object,
+        exception: object,
+        traceback: object,
+    ) -> None:
+        self._http.__exit__(exception_type, exception, traceback)
 
     def list_workspaces(
         self,

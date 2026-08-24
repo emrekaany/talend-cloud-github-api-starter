@@ -6,27 +6,30 @@ This file summarizes direct third-party dependencies and referenced product name
 
 | Package | Declared range | License commonly published by project | Project |
 | --- | --- | --- | --- |
+| `defusedxml` | `>=0.7.1,<1` | Python Software Foundation License | [tiran/defusedxml](https://github.com/tiran/defusedxml) |
 | `httpx` | `>=0.27,<1` | BSD 3-Clause | [encode/httpx](https://github.com/encode/httpx) |
-| `typer` | `>=0.12,<1` | MIT | [fastapi/typer](https://github.com/fastapi/typer) |
+| `typer` | `>=0.16.1,<1` | MIT | [fastapi/typer](https://github.com/fastapi/typer) |
 
 ## Build and test dependencies
 
 | Package | Declared range | License commonly published by project | Project |
 | --- | --- | --- | --- |
-| `hatchling` | `>=1.27` | MIT | [pypa/hatch](https://github.com/pypa/hatch) |
+| `hatchling` | `>=1.27,<2` | MIT | [pypa/hatch](https://github.com/pypa/hatch) |
 | `pytest` | `>=8,<10` | MIT | [pytest-dev/pytest](https://github.com/pytest-dev/pytest) |
 | `pytest-cov` | `>=5,<8` | MIT | [pytest-dev/pytest-cov](https://github.com/pytest-dev/pytest-cov) |
 | `mypy` | `>=1.14,<2` | MIT | [python/mypy](https://github.com/python/mypy) |
 | `ruff` | `>=0.9,<1` | MIT | [astral-sh/ruff](https://github.com/astral-sh/ruff) |
-| `build` | CI tool, version resolved at build time | MIT | [pypa/build](https://github.com/pypa/build) |
+| `types-defusedxml` | `>=0.7,<1` | Apache-2.0 | [python/typeshed](https://github.com/python/typeshed) |
+| `build` | `>=1,<2` in package CI | MIT | [pypa/build](https://github.com/pypa/build) |
+| `twine` | `>=7,<8` in package CI | Apache-2.0 | [pypa/twine](https://github.com/pypa/twine) |
 
 ## GitHub Actions
 
 | Action | Immutable release pin | License commonly published by project | Project |
 | --- | --- | --- | --- |
-| `actions/checkout` | `d23441a48e516b6c34aea4fa41551a30e30af803` (`v6`) | MIT | [actions/checkout](https://github.com/actions/checkout) |
-| `actions/setup-python` | `ece7cb06caefa5fff74198d8649806c4678c61a1` (`v6`) | MIT | [actions/setup-python](https://github.com/actions/setup-python) |
-| `github/codeql-action` | `5595ccaf912efad79be6eef63a5619ff05969be3` (`v4`) | MIT | [github/codeql-action](https://github.com/github/codeql-action) |
+| `actions/checkout` | `3d3c42e5aac5ba805825da76410c181273ba90b1` (`v7.0.1`) | MIT | [actions/checkout](https://github.com/actions/checkout) |
+| `actions/setup-python` | `5fda3b95a4ea91299a34e894583c3862153e4b97` (`v7.0.0`) | MIT | [actions/setup-python](https://github.com/actions/setup-python) |
+| `github/codeql-action` | `ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd` (`v4.37.7`) | MIT | [github/codeql-action](https://github.com/github/codeql-action) |
 
 This GitHub source release does not vendor transitive Python dependencies. If a future binary, container, or other bundled distribution includes transitive dependencies, generate and review its complete resolved dependency/license inventory before publication. A version range or linked repository is not evidence that every resolved version has the same metadata.
 

@@ -1,1 +1,5 @@
 blank_issues_enabled: false
+contact_links:
+  - name: Usage question or non-sensitive introduction
+    url: https://github.com/emrekaany/talend-cloud-github-api-starter/discussions
+    about: Ask with synthetic details only, or request a private contact path without sharing client information.

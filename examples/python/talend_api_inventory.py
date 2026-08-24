@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Small Talend API example; base URL and PAT come from the environment."""
+"""Small Talend API example; base URL and token come from the environment."""
 
 from __future__ import annotations
 

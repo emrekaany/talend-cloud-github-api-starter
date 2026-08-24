@@ -34,7 +34,7 @@ A contribution must preserve these boundaries:
 9. Budget, truncation, ambiguity, and unsupported-format errors fail closed.
 10. Default tests do not call live providers or require a real credential.
 
-Mutation, hosted credential/file entry, private-repository auth, broad filesystem access, source execution, or Talend CommandLine compatibility would change the product boundary. Open a non-sensitive issue before proposing such a redesign.
+Mutation, hosted credential/file entry, private-repository auth, broad filesystem access, source execution, or Talend CommandLine compatibility would change the product boundary. Start a non-sensitive [Discussion](https://github.com/emrekaany/talend-cloud-github-api-starter/discussions) before proposing such a redesign; never include real environment details.
 
 ## Development setup
 
@@ -45,15 +45,27 @@ python -m pip install -e '.[dev]'
 python -m ruff format --check .
 python -m ruff check .
 python -m mypy src
-python -m pytest
+python -m pytest --cov=talend_api_starter --cov-branch --cov-fail-under=100
 talend-api demo
 ```
 
-Windows PowerShell activation:
+Windows PowerShell:
 
 ```powershell
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
+python -m pip install -e ".[dev]"
+python -m ruff format --check .
+python -m ruff check .
+python -m mypy src
+python -m pytest --cov=talend_api_starter --cov-branch --cov-fail-under=100
+talend-api demo
 ```
+
+If PowerShell blocks activation, replace each `python -m` prefix above with
+`.\.venv\Scripts\python.exe -m`, and run
+`.\.venv\Scripts\talend-api.exe demo`. Do not change the machine's execution
+policy just to work on this project.
 
 Use synthetic files and mocked HTTP transports. Tests that require a real tenant, PAT/SAT, private repository, client project, or unrestricted network do not belong in the default suite.
 

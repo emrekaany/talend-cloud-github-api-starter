@@ -83,34 +83,44 @@ def _normalized_key(key: str) -> str:
 def _redact_string(value: str, secrets: Iterable[str]) -> str:
     result = _BEARER_RE.sub(f"Bearer {REDACTED}", value)
     for secret in secrets:
-        if secret:
-            result = result.replace(secret, REDACTED)
+        result = result.replace(secret, REDACTED)
     return result
+
+
+def _safe_key_text(value: Any) -> str:
+    if isinstance(value, str):
+        return value
+    if value is None or isinstance(value, (bool, int, float)):
+        return str(value)
+    return REDACTED
 
 
 def redact_payload(value: Any, *, secrets: Iterable[str] = ()) -> Any:
     """Recursively redact by key and by exact in-process secret value."""
 
+    normalized_secrets = tuple(
+        secret for secret in secrets if isinstance(secret, str) and secret
+    )
     if isinstance(value, Mapping):
         result: dict[str, Any] = {}
         for raw_key, child in value.items():
-            raw_key_text = str(raw_key)
-            key = _redact_string(raw_key_text, secrets)
+            raw_key_text = _safe_key_text(raw_key)
+            key = _redact_string(raw_key_text, normalized_secrets)
             normalized = _normalized_key(raw_key_text)
             if any(part in normalized for part in _SENSITIVE_KEY_PARTS):
                 result[key] = REDACTED
             else:
-                result[key] = redact_payload(child, secrets=secrets)
+                result[key] = redact_payload(child, secrets=normalized_secrets)
         return result
     if isinstance(value, list):
-        return [redact_payload(child, secrets=secrets) for child in value]
+        return [redact_payload(child, secrets=normalized_secrets) for child in value]
     if isinstance(value, tuple):
-        return [redact_payload(child, secrets=secrets) for child in value]
+        return [redact_payload(child, secrets=normalized_secrets) for child in value]
     if isinstance(value, str):
-        return _redact_string(value, secrets)
+        return _redact_string(value, normalized_secrets)
     if value is None or isinstance(value, (bool, int, float)):
         return value
-    return str(value)
+    return REDACTED
 
 
 def _job_local(job: JobDescriptor) -> dict[str, Any]:

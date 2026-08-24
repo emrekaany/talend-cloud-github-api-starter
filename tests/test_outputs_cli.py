@@ -10,13 +10,16 @@ from types import SimpleNamespace
 import pytest
 from typer.testing import CliRunner
 
+import talend_api_starter.outputs as outputs
 from talend_api_starter.cli import app
 from talend_api_starter.errors import ValidationError
 from talend_api_starter.github import GitHubSnapshot
 from talend_api_starter.outputs import (
+    REDACTED,
     _is_windows_junction,
     github_job_outputs,
     local_job_outputs,
+    redact_payload,
     talend_outputs,
     write_output_bundle,
 )
@@ -180,6 +183,7 @@ def test_talend_output_redacts_secret_and_allowlists_share_fields() -> None:
     )
     assert secret not in json.dumps(local)
     assert local["response"]["items"][0]["accessToken"] == "[REDACTED]"
+    assert local["response"][REDACTED] == REDACTED
     assert share["aggregates"]["status_counts"] == {"execution_successful": 1}
     assert share["aggregates"]["execution_type_counts"] == {"SCHEDULED": 1}
     assert "duration_ms" not in share["aggregates"]
@@ -196,6 +200,33 @@ def test_talend_output_redacts_secret_and_allowlists_share_fields() -> None:
         "resource": "runs",
     }
     assert "region" not in share["source"]
+
+
+def test_redaction_handles_tuples_generators_and_untrusted_objects() -> None:
+    secret = "talend_pat_super_secret"
+
+    class OpaqueValue:
+        def __str__(self) -> str:
+            return f"provider echoed {secret} and Bearer external-token"
+
+    redacted = redact_payload(
+        (
+            f"provider echoed {secret} and Bearer external-token",
+            OpaqueValue(),
+            secret,
+            secret,
+            {OpaqueValue(): OpaqueValue(), 7: "public-value"},
+        ),
+        secrets=(value for value in ("", secret)),
+    )
+
+    assert redacted == [
+        f"provider echoed {REDACTED} and Bearer {REDACTED}",
+        REDACTED,
+        REDACTED,
+        REDACTED,
+        {REDACTED: REDACTED, "7": "public-value"},
+    ]
 
 
 def test_unknown_talend_enums_are_bucketed_without_identity_leak() -> None:
@@ -224,6 +255,34 @@ def test_unknown_talend_enums_are_bucketed_without_identity_leak() -> None:
         "record_count": 1,
         "status_counts": {"other": 1},
     }
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected_count"),
+    [
+        ({"items": {"id": "private-id"}}, 0),
+        ({"items": "wrong-shape", "data": [{"id": "private-id"}]}, 1),
+        (("private-id",), 0),
+    ],
+)
+def test_share_safe_ignores_unexpected_record_containers_without_identity_leak(
+    payload: object,
+    expected_count: int,
+) -> None:
+    _, share = talend_outputs(
+        region="private-region",
+        resource="tasks",
+        payload=payload,
+    )
+
+    assert share["aggregates"] == {"record_count": expected_count}
+    assert "private-id" not in json.dumps(share)
+    assert "private-region" not in json.dumps(share)
+
+
+def test_talend_output_rejects_unknown_resource() -> None:
+    with pytest.raises(ValueError, match="Unsupported Talend API resource"):
+        talend_outputs(region="eu", resource="secrets", payload=[])
 
 
 @pytest.mark.parametrize("resource", ["workspaces", "tasks"])
@@ -258,6 +317,73 @@ def test_output_temp_file_is_removed_when_replace_fails(
     if os.name != "nt":
         assert observed_modes == [0o600]
     assert list(tmp_path.glob(".*.tmp")) == []
+
+
+def test_windows_output_path_skips_posix_permission_operations(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    destination = tmp_path / "windows-output"
+
+    def fail_fchmod(_descriptor: int, _mode: int) -> None:
+        raise AssertionError("POSIX fchmod must not run on Windows")
+
+    monkeypatch.setattr(outputs.os, "name", "nt")
+    monkeypatch.setattr(outputs.os, "fchmod", fail_fchmod)
+
+    paths = write_output_bundle(
+        destination,
+        {"output_class": "local_view"},
+        {"output_class": "share_safe"},
+    )
+
+    assert json.loads(paths.local_view.read_text(encoding="utf-8")) == {
+        "output_class": "local_view"
+    }
+    assert json.loads(paths.share_safe.read_text(encoding="utf-8")) == {
+        "output_class": "share_safe"
+    }
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX descriptor modes only")
+def test_output_descriptor_is_closed_when_permission_hardening_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    opened_descriptor: int | None = None
+
+    def fail_fchmod(descriptor: int, _mode: int) -> None:
+        nonlocal opened_descriptor
+        opened_descriptor = descriptor
+        raise OSError("synthetic permission failure")
+
+    monkeypatch.setattr(outputs.os, "fchmod", fail_fchmod)
+    with pytest.raises(OSError, match="synthetic permission failure"):
+        write_output_bundle(
+            tmp_path,
+            {"output_class": "local_view"},
+            {"output_class": "share_safe"},
+        )
+
+    assert opened_descriptor is not None
+    with pytest.raises(OSError):
+        os.fstat(opened_descriptor)
+    assert list(tmp_path.glob(".*.tmp")) == []
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX ownership only")
+def test_output_destination_rejects_foreign_owner(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    destination = tmp_path / "foreign-owner"
+    actual_uid = os.getuid()
+    monkeypatch.setattr(outputs.os, "getuid", lambda: actual_uid + 1)
+
+    with pytest.raises(ValidationError, match="owned by the current user"):
+        write_output_bundle(destination, {"local": 1}, {"share": 1})
+
+    assert list(destination.glob("*.json")) == []
 
 
 def test_github_share_safe_excludes_source_and_job_identity() -> None:

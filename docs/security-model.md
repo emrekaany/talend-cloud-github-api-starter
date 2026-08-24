@@ -13,7 +13,7 @@ The CLI is designed for bounded, read-only metadata discovery. It reduces common
 | Offline modes | Demo and local-project inspection make no provider request |
 | Local files | Scope is bounded and containment-checked; source content is never executed |
 | Git consistency | Ref resolves once; tree and blobs remain tied to one immutable commit |
-| Input size | Requests, responses, directories/files, tree entries, depth, blobs, bytes, and XML complexity are bounded |
+| Input size | Requests, responses, JSON nodes/depth, directories/files, tree entries/path components, blobs, bytes, and XML complexity are bounded |
 | XML | DTD and external entities are rejected; no external resolution |
 | Embedded content | SQL, Java, shell, mapper expressions, and jobs are never executed |
 | Output | Share-safe records come from a separate explicit allowlist |
@@ -27,7 +27,7 @@ The CLI is designed for bounded, read-only metadata discovery. It reduces common
 | Credential disclosure | Token appears in shell history or issue | Environment-only secret; redacted errors; reporting rules | Local malware, parent processes, or copy/paste can still expose it |
 | SSRF / credential forwarding | Provider redirects to another host | Exact host policy; redirects refused | Compromised DNS/TLS trust is outside application control |
 | Local path escape | Selected scope reaches another directory | Resolved containment checks; no followed source execution | OS/filesystem races and same-user malicious processes remain possible |
-| Resource exhaustion | Huge directory, tree, JSON, blob, or XML | Finite count/byte/depth/time budgets | Allowed limits still consume local resources |
+| Resource exhaustion | Huge directory, tree, JSON, blob, or XML | Finite count/byte/depth/time budgets, including decoded JSON complexity | Allowed limits still consume local resources |
 | XML entity attack | `.item` contains DTD/entity references | DTD/entity rejection and no external resolution | Parser/library defects remain possible |
 | Repository race | Branch moves during remote scan | Resolve once and fetch by commit/tree/blob SHA | The selected commit can still contain hostile input |
 | Code execution | XML embeds shell, SQL, Java, or expressions | Treat as data; never invoke runtimes | Future contributors must preserve this invariant |
@@ -80,7 +80,7 @@ The command stops or isolates the affected artifact when it encounters:
 
 - a non-GET or non-allowlisted network target;
 - a redirect;
-- an exceeded request, response, tree, directory, depth, file, byte, XML, or time budget;
+- an exceeded request, response, JSON-complexity, tree, path-component, directory, depth, file, byte, XML, or time budget;
 - a truncated/incomplete Git tree;
 - a path escape, unsafe file type, or unsupported Git object;
 - invalid JSON, base64, encoding, XML, or relationship evidence;

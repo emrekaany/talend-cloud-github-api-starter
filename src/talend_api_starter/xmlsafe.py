@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import re
-import xml.etree.ElementTree as ET
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from pathlib import PurePosixPath
+from typing import Protocol, cast, overload
 from urllib.parse import urlsplit
+
+from defusedxml import ElementTree as ET
+from defusedxml.common import DefusedXmlException
 
 from .errors import XmlSafetyError
 
@@ -30,6 +33,25 @@ _PROCESS_ROOT = f"{{{TALEND_FILE_NAMESPACE}}}ProcessType"
 _FORBIDDEN_DECLARATION_RE = re.compile(rb"<!\s*(?:DOCTYPE|ENTITY)\b", re.I)
 _CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _VERSION_RE = re.compile(r"^[0-9]+(?:\.[0-9]+)*$")
+
+
+class _Element(Protocol):
+    """Structural type shared by the hardened parser and the stdlib element."""
+
+    tag: str
+    attrib: dict[str, str]
+    text: str | None
+    tail: str | None
+
+    @overload
+    def get(self, key: str) -> str | None: ...
+
+    @overload
+    def get(self, key: str, default: str) -> str: ...
+
+    def iter(self, tag: str | None = None) -> Iterator[_Element]: ...
+
+    def __iter__(self) -> Iterator[_Element]: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,7 +84,7 @@ class _PropertiesDescriptor:
     item_href: str
 
 
-def _xmi_id(element: ET.Element) -> str | None:
+def _xmi_id(element: _Element) -> str | None:
     return element.get(_XMI_ID_ATTRIBUTE)
 
 
@@ -73,22 +95,34 @@ def _safe_display(value: str, field: str, max_length: int = 256) -> str:
     return value
 
 
-def _parse_bounded_xml(content: bytes, document_kind: str) -> ET.Element:
+def _parse_bounded_xml(content: bytes, document_kind: str) -> _Element:
     if len(content) > MAX_XML_BYTES:
         raise XmlSafetyError(f"{document_kind}_byte_budget_exceeded")
     if b"\x00" in content:
         raise XmlSafetyError(f"{document_kind}_unsupported_encoding")
-    if _FORBIDDEN_DECLARATION_RE.search(content):
-        raise XmlSafetyError(f"{document_kind}_dtd_or_entity_rejected")
     try:
-        root = ET.fromstring(content)
+        root = cast(
+            _Element,
+            ET.fromstring(
+                content,
+                forbid_dtd=True,
+                forbid_entities=True,
+                forbid_external=True,
+            ),
+        )
+    except DefusedXmlException:
+        raise XmlSafetyError(f"{document_kind}_dtd_or_entity_rejected") from None
+    except (LookupError, ValueError):
+        raise XmlSafetyError(f"{document_kind}_unsupported_encoding") from None
     except ET.ParseError:
+        if _FORBIDDEN_DECLARATION_RE.search(content):
+            raise XmlSafetyError(f"{document_kind}_dtd_or_entity_rejected") from None
         raise XmlSafetyError(f"{document_kind}_malformed_xml") from None
 
     node_count = 0
     attribute_count = 0
     text_bytes = 0
-    stack: list[tuple[ET.Element, int]] = [(root, 1)]
+    stack: list[tuple[_Element, int]] = [(root, 1)]
     while stack:
         element, depth = stack.pop()
         node_count += 1
@@ -109,7 +143,10 @@ def _parse_bounded_xml(content: bytes, document_kind: str) -> ET.Element:
 
 def _validate_relative_href(href: str) -> str:
     href = href.split("#", 1)[0].strip()
-    parsed = urlsplit(href)
+    try:
+        parsed = urlsplit(href)
+    except ValueError:
+        raise XmlSafetyError("invalid_item_href") from None
     if (
         not href
         or parsed.scheme
@@ -205,8 +242,6 @@ def parse_talend_job(
     expected_item = (
         PurePosixPath(properties_path).parent / PurePosixPath(properties.item_href)
     ).as_posix()
-    if expected_item.startswith("./"):
-        expected_item = expected_item[2:]
     if expected_item != item_path:
         raise XmlSafetyError("properties_item_path_mismatch")
     if not PurePosixPath(properties_path).name.endswith(
@@ -242,8 +277,6 @@ def inventory_talend_jobs(files: Mapping[str, bytes]) -> InventoryResult:
                 PurePosixPath(properties_path).parent
                 / PurePosixPath(properties.item_href)
             ).as_posix()
-            if item_path.startswith("./"):
-                item_path = item_path[2:]
             candidates.append((properties_path, item_path))
         except XmlSafetyError as exc:
             # Paths are repository-relative and validated by the GitHub client;
@@ -274,11 +307,3 @@ def inventory_talend_jobs(files: Mapping[str, bytes]) -> InventoryResult:
         except XmlSafetyError as exc:
             warnings.append(f"{properties_path}: {exc}")
     return InventoryResult(tuple(jobs), tuple(warnings))
-
-
-def component_types(jobs: Iterable[JobDescriptor]) -> tuple[str, ...]:
-    return tuple(
-        sorted(
-            {component.component_type for job in jobs for component in job.components}
-        )
-    )

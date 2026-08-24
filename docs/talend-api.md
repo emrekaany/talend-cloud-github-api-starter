@@ -40,12 +40,14 @@ Consult Qlik's current [Talend application URL mapping](https://help.qlik.com/ta
 
 ## Configure the local process
 
-The CLI reads two environment variables:
+The token is environment-only. The regional base URL can come from the
+environment (recommended for repeated commands) or the non-secret `--base-url`
+option shown by each Talend command's help:
 
-| Variable | Purpose | Required shape |
-| --- | --- | --- |
-| `TALEND_BASE_URL` | Exact regional Talend API root | `https://api.<region>.cloud.talend.com`, with no path/query/fragment |
-| `TALEND_TOKEN` | Bearer credential accepted by the selected endpoint | Non-empty, single-line secret |
+| Setting | Source | Purpose | Required shape |
+| --- | --- | --- | --- |
+| `TALEND_BASE_URL` | Environment or `--base-url` alternative | Exact regional Talend API root | `https://api.<region>.cloud.talend.com`, with no path/query/fragment |
+| `TALEND_TOKEN` | Environment only | Bearer credential accepted by the selected endpoint | Non-empty, single-line secret |
 
 The repository does not auto-load `.env` files. `.env.example` documents names only. Never commit a populated environment file.
 
@@ -96,7 +98,7 @@ Every request sends the documented `talend-version: 2021-03` header. Review the 
 - HTTP method is always GET.
 - Authorization is sent as a Bearer header only to the validated host.
 - Redirects are not followed and authorization is never forwarded to another host.
-- Request count, response size, page, selector, and time budgets are finite.
+- Request count, response size, decoded-JSON depth/node complexity, page, selector, and time budgets are finite.
 - Requests are not automatically retried.
 - Provider error bodies, credentials, and raw responses are not copied into share-safe errors.
 - Authentication, authorization, missing resource, rate limit, redirect, invalid JSON, and network failures use redacted categories.

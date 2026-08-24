@@ -49,11 +49,11 @@ It does not resolve `main` again during the scan. This prevents one result from 
 
 ## Scope and budgets
 
-The reader enforces finite request, response-byte, tree-entry, depth,
-blob-count, per-blob, and total decoded-byte ceilings. In the current release
-line, one command may issue at most **40 GitHub requests**. The code in the
-installed revision is the source of truth; budgets are intentionally not
-user-expandable CLI options.
+The reader enforces finite request, response-byte, decoded-JSON complexity,
+tree-entry, path-component, depth, blob-count, per-blob, and total decoded-byte
+ceilings. In the current release line, one command may issue at most **40
+GitHub requests**. The code in the installed revision is the source of truth;
+budgets are intentionally not user-expandable CLI options.
 
 Published `v0.2.0` stops safely on temporary `502`, `503`, and `504` responses
 without an automatic retry. The current `v0.2.1` source retries only those
@@ -64,7 +64,11 @@ failures.
 
 A scan that reaches a ceiling stops instead of reporting an incomplete inventory as complete. Narrow the path rather than bypassing a budget.
 
-Paths must be repository-relative, normalized, and free of traversal, absolute-path, backslash, control-character, and duplicate-separator patterns. Git submodules are not followed as directories.
+Paths must be repository-relative, normalized, and free of traversal,
+absolute-path, backslash, control-character, and duplicate-separator patterns.
+Provider tree-entry components have a byte ceiling, and duplicate sibling
+entries are rejected as ambiguous. Git submodules are not followed as
+directories.
 
 ## Artifact relationship and parser boundary
 

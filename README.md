@@ -216,20 +216,22 @@ customer results, adoption metrics, or proof of access to a live Talend tenant.
 | Gate | Observed result |
 | --- | --- |
 | Published download/install | Anonymous HTTPS clone and tagged-source ZIP install succeeded in fresh environments; `v0.2.0` demo and local synthetic-project flows completed |
-| Automated behavior tests | `119 passed` in the current `v0.2.1` source across GitHub, local-project, Talend API, output-policy, workflow, CLI, and XML-safety paths |
-| Statement coverage | `90.80%`, above the enforced `90%` floor |
+| Automated behavior tests | `254 passed` plus 1 expected macOS filesystem skip in the current `v0.2.1` source across GitHub, local-project, Talend API, output-policy, workflow, CLI, and XML-safety paths |
+| Statement and branch coverage | `100.00%`: `1,225/1,225` statements and `384/384` branches, with an enforced `100%` floor |
 | Static quality | Ruff lint and format checks passed; mypy reported no issues in 13 source files |
-| Package build | Source distribution and wheel built successfully; a fresh-wheel install, `pip check`, version command, and offline demo completed |
+| Security/dependency checks | Semgrep reported zero findings; Bandit completed with one documented environment-variable-name false-positive suppression; pip-audit found no known vulnerability in the resolved dependency set |
+| Package build | Source distribution and wheel built successfully; Twine and wheel-content checks passed; a fresh-wheel install, `pip check`, help/version commands, offline demo, and local synthetic-project flow completed |
 | Public-safety scan | Gitleaks reported no finding in the current source tree or the published Git history; reviewed internal-name, credential, and machine-path patterns returned no match |
+| Live public GitHub path | The anonymous CLI read the repository's `v0.2.0` synthetic fixture at an immutable revision: 1 job, 2 components, 0 warnings, and no credential |
 | Hosted checks | Published `v0.2.0` CI and CodeQL runs completed successfully; the badges above show the latest `main` status |
 
 The repository defines Linux tests for Python 3.10–3.14, Windows smoke tests
-for Python 3.10–3.12, a clean-wheel smoke job, and CodeQL. Live Talend
+for Python 3.10–3.14, a Python 3.10 minimum-dependency gate, a clean-wheel
+package job, and CodeQL. Live Talend
 authentication and endpoint entitlement remain unverified because this review
-correctly used no authorized tenant or secret. An anonymous live GitHub smoke
-was attempted, but GitHub returned transient gateway errors and the shared-IP
-anonymous allowance was then exhausted; local contract tests cover the bounded
-retry and failure behavior without presenting that provider incident as a pass.
+correctly used no authorized tenant or secret. The successful anonymous GitHub
+smoke is point-in-time interoperability evidence, not a provider SLA or a
+guarantee that another IP will have remaining anonymous quota.
 
 ## Limitations
 

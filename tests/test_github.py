@@ -10,6 +10,7 @@ from talend_api_starter.errors import ApiError, BudgetExceeded, ValidationError
 from talend_api_starter.github import (
     GITHUB_API_VERSION,
     GitHubPublicClient,
+    normalize_git_ref,
     parse_repository_slug,
 )
 from talend_api_starter.synthetic import SYNTHETIC_ITEM, SYNTHETIC_PROPERTIES
@@ -22,11 +23,73 @@ ITEM_SHA = "e" * 40
 TAG_SHA = "f" * 40
 
 
+class _CloseFailingTransport(httpx.BaseTransport):
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={}, request=request)
+
+    def close(self) -> None:
+        raise httpx.CloseError("private GitHub client close detail")
+
+
 def test_repository_slug_requires_one_owner_repository_separator() -> None:
     assert parse_repository_slug("owner/repository") == ("owner", "repository")
     for value in ("repository", "owner/repository/extra", "../repository"):
         with pytest.raises(ValidationError):
             parse_repository_slug(value)
+
+
+def test_explicit_ref_prefix_is_normalized_without_changing_its_identity() -> None:
+    assert normalize_git_ref("refs/tags/v1.2.3") == "tags/v1.2.3"
+
+
+@pytest.mark.parametrize("ref", ["refs/foo", "refs/tags", "refs/heads"])
+def test_malformed_explicit_ref_names_are_rejected_before_network(ref: str) -> None:
+    with pytest.raises(ValidationError, match="Invalid GitHub ref"):
+        normalize_git_ref(ref)
+
+
+@pytest.mark.parametrize("path_prefix", ["process/\ud800", "process/bad\x7fpath"])
+def test_path_prefix_requires_valid_printable_unicode(path_prefix: str) -> None:
+    with pytest.raises(ValidationError, match="Invalid repository path prefix"):
+        GitHubPublicClient().fetch_job_files(
+            "owner", "repository", path_prefix=path_prefix
+        )
+
+
+def test_github_context_close_failure_does_not_mask_an_active_safe_error() -> None:
+    with (
+        pytest.raises(ApiError) as caught,
+        GitHubPublicClient(transport=_CloseFailingTransport()),
+    ):
+        raise ApiError("github", 404, "not_found")
+
+    assert caught.value.code == "not_found"
+    assert "private GitHub client close detail" not in str(caught.value)
+
+
+def test_github_close_failure_is_safely_mapped() -> None:
+    client = GitHubPublicClient(transport=_CloseFailingTransport())
+
+    with pytest.raises(ApiError) as caught:
+        client.close()
+
+    assert caught.value.code == "network_error"
+    assert "private GitHub client close detail" not in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    "budget_name",
+    [
+        "max_tree_entries",
+        "max_depth",
+        "max_blobs",
+        "max_blob_bytes",
+        "max_total_blob_bytes",
+    ],
+)
+def test_every_github_scan_budget_must_be_positive(budget_name: str) -> None:
+    with pytest.raises(ValueError, match="scan budgets must be positive"):
+        GitHubPublicClient(**{budget_name: 0})
 
 
 def fixture_handler(
@@ -95,6 +158,47 @@ def fixture_handler(
     return handler
 
 
+@pytest.mark.parametrize(
+    ("payload", "expected_code"),
+    [
+        ([], "invalid_ref_response"),
+        ({"object": {"type": "commit", "sha": "not-a-sha"}}, "invalid_ref_response"),
+        (
+            {"object": {"type": "tree", "sha": COMMIT_SHA}},
+            "ref_target_not_commit",
+        ),
+    ],
+)
+def test_ref_responses_require_a_commit_or_annotated_tag_target(
+    payload: object, expected_code: str
+) -> None:
+    transport = httpx.MockTransport(lambda _: httpx.Response(200, json=payload))
+    with (
+        GitHubPublicClient(transport=transport) as client,
+        pytest.raises(ApiError) as caught,
+    ):
+        client.resolve_ref("owner", "repo", "main")
+
+    assert caught.value.code == expected_code
+
+
+def test_public_resolve_ref_returns_the_commit_and_root_tree() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/git/ref/heads/main"):
+            return httpx.Response(
+                200, json={"object": {"type": "commit", "sha": COMMIT_SHA}}
+            )
+        if request.url.path.endswith(f"/git/commits/{COMMIT_SHA}"):
+            return httpx.Response(200, json={"tree": {"sha": ROOT_TREE_SHA}})
+        raise AssertionError(request.url.path)
+
+    with GitHubPublicClient(transport=httpx.MockTransport(handler)) as client:
+        assert client.resolve_ref("owner", "repo", "main") == (
+            COMMIT_SHA,
+            ROOT_TREE_SHA,
+        )
+
+
 def test_resolves_ref_commit_tree_and_reads_same_snapshot_blobs() -> None:
     requests: list[httpx.Request] = []
     with GitHubPublicClient(
@@ -154,6 +258,227 @@ def test_truncated_tree_is_rejected() -> None:
         pytest.raises(BudgetExceeded, match="truncated_tree_refused"),
     ):
         client.fetch_job_files("owner", "repo", path_prefix="process")
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"tree": []},
+        {"truncated": False, "tree": {}},
+        {
+            "truncated": False,
+            "tree": [{"path": "nested/name", "type": "blob", "sha": ITEM_SHA}],
+        },
+        {
+            "truncated": False,
+            "tree": [{"path": "bad\x7fname", "type": "blob", "sha": ITEM_SHA}],
+        },
+        {
+            "truncated": False,
+            "tree": [{"path": "a" * 1_025, "type": "blob", "sha": ITEM_SHA}],
+        },
+        {
+            "truncated": False,
+            "tree": [
+                {"path": "duplicate", "type": "blob", "sha": ITEM_SHA},
+                {"path": "duplicate", "type": "blob", "sha": ITEM_SHA},
+            ],
+        },
+    ],
+)
+def test_tree_responses_require_complete_non_recursive_git_shapes(
+    payload: object,
+) -> None:
+    transport = httpx.MockTransport(lambda _: httpx.Response(200, json=payload))
+    with (
+        GitHubPublicClient(transport=transport) as client,
+        pytest.raises(ApiError, match="invalid_tree_response"),
+    ):
+        client._get_tree("owner", "repo", ROOT_TREE_SHA)
+
+
+@pytest.mark.parametrize(
+    ("entries", "expected_exception", "expected_message"),
+    [
+        ([], ApiError, "path_prefix_not_found"),
+        (
+            [{"path": "process", "type": "blob", "sha": ITEM_SHA}],
+            ValidationError,
+            "must identify a tree",
+        ),
+    ],
+)
+def test_path_prefix_must_exist_and_resolve_to_a_tree(
+    entries: list[dict[str, object]],
+    expected_exception: type[Exception],
+    expected_message: str,
+) -> None:
+    payload = {"truncated": False, "tree": entries}
+    transport = httpx.MockTransport(lambda _: httpx.Response(200, json=payload))
+    with (
+        GitHubPublicClient(transport=transport) as client,
+        pytest.raises(expected_exception, match=expected_message),
+    ):
+        client._descend_prefix("owner", "repo", ROOT_TREE_SHA, "process")
+
+
+def test_nested_tree_depth_budget_is_enforced_before_unbounded_walk() -> None:
+    payload = {
+        "truncated": False,
+        "tree": [{"path": "nested", "type": "tree", "sha": PROCESS_TREE_SHA}],
+    }
+    transport = httpx.MockTransport(lambda _: httpx.Response(200, json=payload))
+    with (
+        GitHubPublicClient(max_depth=1, transport=transport) as client,
+        pytest.raises(BudgetExceeded, match="tree_depth_budget_exceeded"),
+    ):
+        client._scan_prefix_tree("owner", "repo", ROOT_TREE_SHA, "process")
+
+
+def test_scan_ignores_non_talend_blobs_and_submodule_entries() -> None:
+    payload = {
+        "truncated": False,
+        "tree": [
+            {"path": "README.md", "type": "blob", "sha": ITEM_SHA, "size": 1},
+            {"path": "vendor", "type": "commit", "sha": COMMIT_SHA},
+        ],
+    }
+    transport = httpx.MockTransport(lambda _: httpx.Response(200, json=payload))
+    with GitHubPublicClient(transport=transport) as client:
+        assert client._scan_prefix_tree("owner", "repo", ROOT_TREE_SHA, "process") == []
+
+
+@pytest.mark.parametrize(
+    ("entries", "client_kwargs", "expected_message"),
+    [
+        (
+            [{"path": "large.item", "type": "blob", "sha": ITEM_SHA, "size": 2}],
+            {"max_blob_bytes": 1},
+            "blob_byte_budget_exceeded",
+        ),
+        (
+            [
+                {"path": "one.item", "type": "blob", "sha": ITEM_SHA, "size": 1},
+                {
+                    "path": "two.properties",
+                    "type": "blob",
+                    "sha": PROPERTIES_SHA,
+                    "size": 1,
+                },
+            ],
+            {"max_blobs": 1},
+            "blob_count_budget_exceeded",
+        ),
+    ],
+)
+def test_tree_metadata_is_bounded_before_any_blob_download(
+    entries: list[dict[str, object]],
+    client_kwargs: dict[str, int],
+    expected_message: str,
+) -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json={"truncated": False, "tree": entries})
+
+    with (
+        GitHubPublicClient(
+            transport=httpx.MockTransport(handler), **client_kwargs
+        ) as client,
+        pytest.raises(BudgetExceeded, match=expected_message),
+    ):
+        client._scan_prefix_tree("owner", "repo", ROOT_TREE_SHA, "process")
+
+    assert all("/git/blobs/" not in request.url.path for request in requests)
+
+
+@pytest.mark.parametrize(
+    (
+        "payload",
+        "declared_size",
+        "client_kwargs",
+        "expected_exception",
+        "expected_message",
+    ),
+    [
+        (
+            {"encoding": "utf-8", "content": "plain text"},
+            None,
+            {},
+            ApiError,
+            "unsupported_blob_encoding",
+        ),
+        (
+            {"encoding": "base64", "content": "%%%"},
+            None,
+            {},
+            ApiError,
+            "invalid_blob_response",
+        ),
+        (
+            {"encoding": "base64", "content": "eA==", "size": 2},
+            None,
+            {},
+            ApiError,
+            "blob_size_mismatch",
+        ),
+        (
+            {"encoding": "base64", "content": "eA==", "size": 1},
+            2,
+            {},
+            ApiError,
+            "blob_size_mismatch",
+        ),
+        (
+            {"encoding": "base64", "content": "eHg="},
+            None,
+            {"max_blob_bytes": 1},
+            BudgetExceeded,
+            "blob_byte_budget_exceeded",
+        ),
+    ],
+)
+def test_blob_payloads_require_base64_and_consistent_bounded_sizes(
+    payload: object,
+    declared_size: int | None,
+    client_kwargs: dict[str, int],
+    expected_exception: type[Exception],
+    expected_message: str,
+) -> None:
+    transport = httpx.MockTransport(lambda _: httpx.Response(200, json=payload))
+    with (
+        GitHubPublicClient(
+            transport=transport,
+            **client_kwargs,
+        ) as client,
+        pytest.raises(expected_exception, match=expected_message),
+    ):
+        client._fetch_blobs(
+            "owner", "repo", [("process/Synthetic.item", ITEM_SHA, declared_size)]
+        )
+
+
+def test_total_decoded_blob_bytes_are_bounded_across_files() -> None:
+    payload = {
+        "encoding": "base64",
+        "content": base64.b64encode(b"xx").decode(),
+        "size": 2,
+    }
+    transport = httpx.MockTransport(lambda _: httpx.Response(200, json=payload))
+    blobs = [
+        ("process/one.item", ITEM_SHA, 2),
+        ("process/two.properties", PROPERTIES_SHA, 2),
+    ]
+    with (
+        GitHubPublicClient(
+            max_blob_bytes=2,
+            max_total_blob_bytes=3,
+            transport=transport,
+        ) as client,
+        pytest.raises(BudgetExceeded, match="total_blob_byte_budget_exceeded"),
+    ):
+        client._fetch_blobs("owner", "repo", blobs)
 
 
 @pytest.mark.parametrize(
@@ -283,6 +608,44 @@ def test_annotated_tag_is_peeled_to_commit() -> None:
     assert any("/git/tags/" in request.url.path for request in requests)
 
 
+def test_annotated_tag_must_eventually_target_a_commit() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/git/ref/tags/v1.0.0"):
+            return httpx.Response(200, json={"object": {"type": "tag", "sha": TAG_SHA}})
+        if request.url.path.endswith(f"/git/tags/{TAG_SHA}"):
+            return httpx.Response(
+                200, json={"object": {"type": "blob", "sha": ITEM_SHA}}
+            )
+        raise AssertionError(request.url.path)
+
+    with (
+        GitHubPublicClient(transport=httpx.MockTransport(handler)) as client,
+        pytest.raises(ApiError, match="tag_target_not_commit"),
+    ):
+        client.resolve_ref("owner", "repo", "tags/v1.0.0")
+
+
+def test_annotated_tag_chain_has_a_hard_depth_limit() -> None:
+    tag_requests = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal tag_requests
+        if request.url.path.endswith("/git/ref/tags/v1.0.0"):
+            return httpx.Response(200, json={"object": {"type": "tag", "sha": TAG_SHA}})
+        if request.url.path.endswith(f"/git/tags/{TAG_SHA}"):
+            tag_requests += 1
+            return httpx.Response(200, json={"object": {"type": "tag", "sha": TAG_SHA}})
+        raise AssertionError(request.url.path)
+
+    with (
+        GitHubPublicClient(transport=httpx.MockTransport(handler)) as client,
+        pytest.raises(BudgetExceeded, match="annotated_tag_depth_budget_exceeded"),
+    ):
+        client.resolve_ref("owner", "repo", "tags/v1.0.0")
+
+    assert tag_requests == 5
+
+
 def test_bare_tag_falls_back_after_missing_branch() -> None:
     requests: list[httpx.Request] = []
 
@@ -324,10 +687,15 @@ def test_bare_tag_falls_back_after_missing_branch() -> None:
     assert any(path.endswith("/git/ref/tags/v1.0.0") for path in requested_paths)
 
 
-def test_transient_gateway_failures_are_retried_within_budget() -> None:
+def test_transient_gateway_failures_are_retried_within_budget(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     requests: list[httpx.Request] = []
+    sleep_delays: list[float] = []
     normal_handler = fixture_handler(requests)
     ref_attempts = 0
+
+    monkeypatch.setattr("talend_api_starter.github.time.sleep", sleep_delays.append)
 
     def handler(request: httpx.Request) -> httpx.Response:
         nonlocal ref_attempts
@@ -339,7 +707,7 @@ def test_transient_gateway_failures_are_retried_within_budget() -> None:
         return normal_handler(request)
 
     with GitHubPublicClient(
-        transport=httpx.MockTransport(handler), retry_delay_seconds=0
+        transport=httpx.MockTransport(handler), retry_delay_seconds=0.25
     ) as client:
         snapshot = client.fetch_job_files(
             "owner", "repo", ref="main", path_prefix="process"
@@ -347,7 +715,8 @@ def test_transient_gateway_failures_are_retried_within_budget() -> None:
 
     assert snapshot.commit_sha == COMMIT_SHA
     assert ref_attempts == 3
-    assert client._http.request_count == len(requests)
+    assert sleep_delays == [0.25, 0.5]
+    assert client.request_count == len(requests)
 
 
 @pytest.mark.parametrize("provider_status", [502, 503, 504])

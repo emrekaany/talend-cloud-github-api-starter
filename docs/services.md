@@ -36,7 +36,9 @@ Consider a private engagement when the decision depends on questions such as:
 
 ## Start without sharing sensitive data
 
-For a first, non-sensitive inquiry, open a GitHub Issue that contains only:
+For a first, non-sensitive inquiry, start a
+[GitHub Discussion](https://github.com/emrekaany/talend-cloud-github-api-starter/discussions)
+that contains only:
 
 - the broad business question (for example, dependency, migration, or data quality);
 - an approximate project-size band, not project or client names;
@@ -44,7 +46,7 @@ For a first, non-sensitive inquiry, open a GitHub Issue that contains only:
 - the desired decision or deliverable;
 - a request to establish a private contact path.
 
-Do not attach files, screenshots, logs, outputs, identifiers, credentials, private URLs, or environment details. A public issue is only a non-sensitive introduction; it does not authorize access or analysis.
+Do not attach files, screenshots, logs, outputs, identifiers, credentials, private URLs, or environment details. A public discussion is only a non-sensitive introduction; it does not authorize access or analysis.
 
 ## Never send through public GitHub
 
@@ -56,7 +58,7 @@ Never put the following in an issue, pull request, gist, screenshot, or public l
 - `.item`, `.properties`, `talend.project`, contexts, connections, SQL, generated Java, or job exports;
 - personal, customer, employee, contract, incident, procurement, or production data.
 
-A private engagement begins only after an approved private channel, explicit scope, authorization, and data-handling path exist.
+A private engagement begins only after an approved private channel, explicit scope, authorization, and data-handling path exist. A public discussion is not a private support channel and does not authorize access or analysis.
 
 ## Independence notice
 

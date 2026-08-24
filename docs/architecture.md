@@ -42,7 +42,7 @@ flowchart TB
 | Local project provider | Read bounded supported artifact candidates below an authorized path | Traverse escapes, follow source as code, or run Talend/Git |
 | GitHub provider | Resolve one ref and read bounded public tree/blob data | Authenticate private repositories, clone, execute, or mix revisions |
 | Talend API provider | Read allowlisted operational metadata from the exact validated host | Mutate resources or claim access beyond the caller's entitlement |
-| HTTP policy | Enforce host, GET method, redirects, timeouts, response size, request budgets, and provider-specific retry policy | Follow redirects or retry an unapproved status outside the fixed request budget |
+| HTTP policy | Enforce host, GET method, redirects, timeouts, response/JSON complexity, request budgets, and provider-specific retry policy | Follow redirects or retry an unapproved status outside the fixed request budget |
 | Pairing/parser | Validate `.properties` / `.item` evidence and extract structural metadata | Resolve entities or execute embedded SQL, Java, shell, or expressions |
 | Output policy | Build a local view and a separate identity-free projection | Serialize raw provider objects or XML into share-safe output |
 
@@ -51,7 +51,7 @@ flowchart TB
 1. **GET-only live access.** A provider request must match both an allowlisted host and an allowlisted GET endpoint template.
 2. **No-network local modes.** The demo and local-project commands do not contact Talend or GitHub.
 3. **Immutable Git reads.** A branch or tag is resolved once; every accepted tree and blob belongs to the resulting commit chain.
-4. **Bounded input.** Files, paths, depth, tree entries, bytes, XML nodes/text, responses, pages, and request counts have finite ceilings.
+4. **Bounded input.** Files, paths/components, depth, tree entries, bytes, JSON nodes/depth, XML nodes/text, responses, pages, and request counts have finite ceilings.
 5. **Untrusted content.** XML, names, paths, descriptions, tags, provider fields, and errors can be hostile.
 6. **No embedded execution.** SQL, Java, shell, mapper expressions, and Talend jobs are data, never commands.
 7. **Separate outputs.** Share-safe data is constructed from an allowlist; it is not a lightly redacted local view.

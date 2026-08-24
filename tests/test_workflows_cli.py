@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+import pytest
 from typer.testing import CliRunner
 
 import talend_api_starter.cli as cli
@@ -103,6 +104,21 @@ def test_reusable_talend_workflows_cover_all_resources(tmp_path: Path) -> None:
         assert paths.local_view.is_file()
         assert paths.share_safe.is_file()
     assert [name for name, _ in client.calls] == ["workspaces", "tasks", "runs"]
+
+
+def test_reusable_talend_workflow_rejects_unknown_resource(tmp_path: Path) -> None:
+    client = FakeTalendClient()
+
+    with pytest.raises(ValueError, match="Unsupported Talend API resource"):
+        save_talend_inventory(
+            client,  # type: ignore[arg-type]
+            resource="secrets",
+            destination=tmp_path,
+        )
+
+    assert client.calls == []
+    assert not tmp_path.joinpath("local_view.json").exists()
+    assert not tmp_path.joinpath("share_safe.json").exists()
 
 
 def test_talend_workflow_redacts_normalized_environment_token(
@@ -218,6 +234,18 @@ def test_cli_redacts_expected_validation_failure() -> None:
     assert "OWNER/REPOSITORY" in result.output
 
 
+def test_cli_redacts_local_io_failures(monkeypatch: Any) -> None:
+    def fail_with_private_path(_: Path) -> OutputPaths:
+        raise OSError("cannot write /private/customer/path")
+
+    monkeypatch.setattr(cli, "save_demo", fail_with_private_path)
+    result = runner.invoke(cli.app, ["demo"])
+
+    assert result.exit_code == 2
+    assert result.output.strip() == "Error: local_io_error"
+    assert "/private/customer/path" not in result.output
+
+
 def test_talend_client_factory_uses_explicit_or_environment_configuration(
     monkeypatch: Any,
 ) -> None:
@@ -239,3 +267,14 @@ def test_module_entrypoint_invokes_app(monkeypatch: Any) -> None:
     monkeypatch.setattr(cli, "app", fake_app)
     runpy.run_module("talend_api_starter.__main__", run_name="__main__")
     assert called == 1
+
+
+def test_module_entrypoint_is_side_effect_free_when_imported(monkeypatch: Any) -> None:
+    def fail_app() -> None:
+        raise AssertionError("normal module import must not start the CLI")
+
+    monkeypatch.setattr(cli, "app", fail_app)
+    runpy.run_module(
+        "talend_api_starter.__main__",
+        run_name="talend_api_starter.__main_import_test__",
+    )

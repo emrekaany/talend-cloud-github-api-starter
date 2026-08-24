@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
+import stat
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -66,7 +68,17 @@ def test_explicit_prefix_is_safe_portable_and_still_root_relative(
 
 @pytest.mark.parametrize(
     "path_prefix",
-    ["", ".", "..", "../process", "/process", "process/", "process//demo", "C:/x"],
+    [
+        "",
+        ".",
+        "..",
+        "../process",
+        "/process",
+        "process/",
+        "process//demo",
+        "C:/x",
+        "process/invalid_\udcff",
+    ],
 )
 def test_unsafe_path_prefixes_are_rejected(
     tmp_path: Path,
@@ -74,6 +86,17 @@ def test_unsafe_path_prefixes_are_rejected(
 ) -> None:
     with pytest.raises(ValidationError, match="^invalid_local_path_prefix$"):
         local_project.read_local_job_files(tmp_path, path_prefix=path_prefix)
+
+
+@pytest.mark.parametrize("root", ["", "\x00"])
+def test_empty_or_nul_root_is_rejected(root: str) -> None:
+    with pytest.raises(ValidationError, match="^local_root_required$"):
+        local_project.read_local_job_files(root)
+
+
+def test_non_string_prefix_is_rejected(tmp_path: Path) -> None:
+    with pytest.raises(ValidationError, match="^invalid_local_path_prefix$"):
+        local_project.read_local_job_files(tmp_path, path_prefix=object())  # type: ignore[arg-type]
 
 
 def test_root_and_prefix_must_be_exact_existing_directories(tmp_path: Path) -> None:
@@ -91,6 +114,15 @@ def test_root_and_prefix_must_be_exact_existing_directories(tmp_path: Path) -> N
         match="^local_path_prefix_not_directory$",
     ):
         local_project.read_local_job_files(child)
+
+    prefix_file_root = tmp_path / "prefix-file-root"
+    prefix_file_root.mkdir()
+    (prefix_file_root / "process").write_text("not a directory", encoding="utf-8")
+    with pytest.raises(
+        ValidationError,
+        match="^local_path_prefix_not_directory$",
+    ):
+        local_project.read_local_job_files(prefix_file_root)
 
 
 def test_root_and_prefix_symlinks_are_rejected(tmp_path: Path) -> None:
@@ -233,4 +265,333 @@ def test_simulated_reparse_prefix_is_rejected(
         ValidationError,
         match="^local_path_prefix_boundary_rejected$",
     ):
+        local_project.read_local_job_files(tmp_path)
+
+
+def test_root_resolution_failure_is_redacted(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_resolve = Path.resolve
+
+    def fail_root_resolution(self: Path, strict: bool = False) -> Path:
+        if self == tmp_path:
+            raise OSError("synthetic root resolution failure")
+        return original_resolve(self, strict=strict)
+
+    monkeypatch.setattr(Path, "resolve", fail_root_resolution)
+    with pytest.raises(ValidationError, match="^local_root_not_directory$") as caught:
+        local_project.read_local_job_files(tmp_path)
+    assert str(tmp_path) not in str(caught.value)
+
+
+def test_root_type_change_after_resolution_is_rejected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_safe_lstat = local_project._safe_lstat
+    root_checks = 0
+
+    def changed_root_stat(path: Path, error_code: str) -> os.stat_result:
+        nonlocal root_checks
+        result = original_safe_lstat(path, error_code)
+        if path == tmp_path:
+            root_checks += 1
+            if root_checks == 2:
+                return SimpleNamespace(  # type: ignore[return-value]
+                    st_mode=stat.S_IFREG,
+                    st_file_attributes=0,
+                )
+        return result
+
+    monkeypatch.setattr(local_project, "_safe_lstat", changed_root_stat)
+    with pytest.raises(ValidationError, match="^local_root_boundary_rejected$"):
+        local_project.read_local_job_files(tmp_path)
+
+
+def test_prefix_escape_during_resolution_is_rejected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    process = tmp_path / "process"
+    process.mkdir()
+    original_resolve = Path.resolve
+
+    def escape_prefix(self: Path, strict: bool = False) -> Path:
+        if self == process:
+            return tmp_path.parent
+        return original_resolve(self, strict=strict)
+
+    monkeypatch.setattr(Path, "resolve", escape_prefix)
+    with pytest.raises(
+        ValidationError,
+        match="^local_path_prefix_boundary_rejected$",
+    ):
+        local_project.read_local_job_files(tmp_path)
+
+
+def test_walk_error_is_converted_to_redacted_validation_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    (tmp_path / "process").mkdir()
+
+    def failing_walk(*_args: object, **kwargs: object) -> tuple[()]:
+        onerror = kwargs["onerror"]
+        assert callable(onerror)
+        onerror(OSError("synthetic walk failure"))
+        return ()
+
+    monkeypatch.setattr(local_project.os, "walk", failing_walk)
+    with pytest.raises(ValidationError, match="^local_project_walk_failed$") as caught:
+        local_project.read_local_job_files(tmp_path)
+    assert str(tmp_path) not in str(caught.value)
+
+
+def test_directory_disappearing_during_descent_is_skipped(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    process = tmp_path / "process"
+    process.mkdir()
+
+    def changing_walk(*_args: object, **_kwargs: object) -> object:
+        return iter([(str(process), ["disappeared"], [])])
+
+    monkeypatch.setattr(local_project.os, "walk", changing_walk)
+    assert local_project.read_local_job_files(tmp_path) == {}
+
+
+def test_file_type_swap_before_open_is_rejected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_pair(tmp_path)
+    target = tmp_path / "process" / "demo" / "SyntheticCustomers_0.1.item"
+    original_safe_lstat = local_project._safe_lstat
+    target_checks = 0
+
+    def swapped_stat(path: Path, error_code: str) -> os.stat_result:
+        nonlocal target_checks
+        result = original_safe_lstat(path, error_code)
+        if path == target:
+            target_checks += 1
+            if target_checks == 2:
+                return SimpleNamespace(  # type: ignore[return-value]
+                    st_mode=stat.S_IFDIR,
+                    st_file_attributes=0,
+                )
+        return result
+
+    monkeypatch.setattr(local_project, "_safe_lstat", swapped_stat)
+    with pytest.raises(ValidationError, match="^local_project_boundary_changed$"):
+        local_project.read_local_job_files(tmp_path)
+
+
+def test_open_failure_is_converted_to_validation_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "candidate.item"
+    target.write_bytes(b"synthetic")
+    original_open = os.open
+
+    def fail_target_open(path: os.PathLike[str] | str, flags: int) -> int:
+        if Path(path) == target:
+            raise OSError("synthetic open failure")
+        return original_open(path, flags)
+
+    monkeypatch.setattr(local_project.os, "open", fail_target_open)
+    with pytest.raises(ValidationError, match="^local_project_file_read_failed$"):
+        local_project._open_read_only(target)
+
+
+def test_fstat_failure_closes_the_open_descriptor(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "candidate.item"
+    target.write_bytes(b"synthetic")
+    original_open = os.open
+    original_fstat = os.fstat
+    target_descriptors: list[int] = []
+
+    def track_target_open(path: os.PathLike[str] | str, flags: int) -> int:
+        descriptor = original_open(path, flags)
+        if Path(path) == target:
+            target_descriptors.append(descriptor)
+        return descriptor
+
+    def fail_target_fstat(descriptor: int) -> os.stat_result:
+        if descriptor in target_descriptors:
+            raise OSError("synthetic fstat failure")
+        return original_fstat(descriptor)
+
+    monkeypatch.setattr(local_project.os, "open", track_target_open)
+    monkeypatch.setattr(local_project.os, "fstat", fail_target_fstat)
+    with pytest.raises(ValidationError, match="^local_project_file_read_failed$"):
+        local_project._open_read_only(target)
+
+    assert len(target_descriptors) == 1
+    with pytest.raises(OSError):
+        original_fstat(target_descriptors[0])
+
+
+def test_inode_swap_after_open_is_rejected_and_descriptor_is_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "candidate.item"
+    target.write_bytes(b"synthetic")
+    original_open = os.open
+    original_fstat = os.fstat
+    target_descriptors: list[int] = []
+
+    def track_target_open(path: os.PathLike[str] | str, flags: int) -> int:
+        descriptor = original_open(path, flags)
+        if Path(path) == target:
+            target_descriptors.append(descriptor)
+        return descriptor
+
+    def report_changed_inode(descriptor: int) -> os.stat_result:
+        result = original_fstat(descriptor)
+        if descriptor in target_descriptors:
+            return SimpleNamespace(  # type: ignore[return-value]
+                st_mode=result.st_mode,
+                st_dev=result.st_dev,
+                st_ino=result.st_ino + 1,
+                st_file_attributes=getattr(result, "st_file_attributes", 0),
+            )
+        return result
+
+    monkeypatch.setattr(local_project.os, "open", track_target_open)
+    monkeypatch.setattr(local_project.os, "fstat", report_changed_inode)
+    with pytest.raises(ValidationError, match="^local_project_boundary_changed$"):
+        local_project._open_read_only(target)
+
+    assert len(target_descriptors) == 1
+    with pytest.raises(OSError):
+        original_fstat(target_descriptors[0])
+
+
+def test_stream_read_failure_is_converted_to_validation_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "candidate.item"
+    target.write_bytes(b"synthetic")
+
+    class FailingStream:
+        def __init__(self, descriptor: int) -> None:
+            self.descriptor = descriptor
+
+        def __enter__(self) -> FailingStream:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            os.close(self.descriptor)
+
+        def read(self, _size: int) -> bytes:
+            raise OSError("synthetic read failure")
+
+    monkeypatch.setattr(
+        local_project.os,
+        "fdopen",
+        lambda descriptor, _mode: FailingStream(descriptor),
+    )
+    with pytest.raises(ValidationError, match="^local_project_file_read_failed$"):
+        local_project._read_candidate(target, properties_file=False)
+
+
+def test_fdopen_failure_closes_descriptor_and_returns_safe_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "candidate.item"
+    target.write_bytes(b"synthetic")
+    opened_descriptors: list[int] = []
+
+    def fail_fdopen(descriptor: int, _mode: str) -> None:
+        opened_descriptors.append(descriptor)
+        raise OSError("synthetic fdopen failure")
+
+    monkeypatch.setattr(local_project.os, "fdopen", fail_fdopen)
+    with pytest.raises(ValidationError, match="^local_project_file_read_failed$"):
+        local_project._read_candidate(target, properties_file=False)
+
+    assert len(opened_descriptors) == 1
+    with pytest.raises(OSError):
+        os.fstat(opened_descriptors[0])
+
+
+def test_file_growth_after_open_still_respects_read_cap(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "candidate.item"
+    target.write_bytes(b"four")
+    actual_stat = target.stat()
+
+    def stale_open_stat(_path: Path) -> tuple[int, os.stat_result, object]:
+        descriptor = os.open(target, os.O_RDONLY)
+        return descriptor, actual_stat, SimpleNamespace(st_size=0)
+
+    monkeypatch.setattr(local_project, "MAX_LOCAL_FILE_BYTES", 3)
+    monkeypatch.setattr(local_project, "_open_read_only", stale_open_stat)
+    with pytest.raises(BudgetExceeded, match="^local_file_byte_budget_exceeded$"):
+        local_project._read_candidate(target, properties_file=False)
+
+
+def test_candidate_resolution_failure_is_treated_as_boundary_change(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_pair(tmp_path)
+    target = tmp_path / "process" / "demo" / "SyntheticCustomers_0.1.item"
+    original_resolve = Path.resolve
+
+    def fail_candidate_resolution(self: Path, strict: bool = False) -> Path:
+        if self == target:
+            raise OSError("synthetic candidate resolution failure")
+        return original_resolve(self, strict=strict)
+
+    monkeypatch.setattr(Path, "resolve", fail_candidate_resolution)
+    with pytest.raises(ValidationError, match="^local_project_boundary_changed$"):
+        local_project.read_local_job_files(tmp_path)
+
+
+@pytest.mark.parametrize("unsafe_name", ["bad_\udcff.item", "bad\x7f.item"])
+def test_collected_paths_require_strict_utf8_without_controls(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    unsafe_name: str,
+) -> None:
+    process = tmp_path / "process"
+    process.mkdir()
+
+    monkeypatch.setattr(
+        local_project.os,
+        "walk",
+        lambda *_args, **_kwargs: iter([(str(process), [], [unsafe_name])]),
+    )
+
+    with pytest.raises(ValidationError, match="^local_project_path_rejected$"):
+        local_project.read_local_job_files(tmp_path)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Windows paths do not expose raw bytes")
+def test_posix_undecodable_artifact_name_fails_closed(tmp_path: Path) -> None:
+    process = tmp_path / "process"
+    process.mkdir()
+    raw_path = os.fsencode(process) + b"/Synthetic_\xff.item"
+    try:
+        descriptor = os.open(raw_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except OSError:
+        pytest.skip("filesystem rejects undecodable byte names")
+    try:
+        os.write(descriptor, SYNTHETIC_ITEM)
+    finally:
+        os.close(descriptor)
+
+    with pytest.raises(ValidationError, match="^local_project_path_rejected$"):
         local_project.read_local_job_files(tmp_path)

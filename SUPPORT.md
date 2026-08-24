@@ -16,7 +16,7 @@ Community support is best effort. The free CLI has no guaranteed response time, 
 | Reproducible bug using bundled/synthetic data | GitHub bug-report issue form |
 | Documentation correction | GitHub documentation issue form |
 | Read-only feature proposal | GitHub feature-request issue form |
-| Non-sensitive usage question | GitHub Issue with a synthetic example |
+| Non-sensitive usage question | [GitHub Discussion](https://github.com/emrekaany/talend-cloud-github-api-starter/discussions) with a synthetic example |
 | Suspected vulnerability | Private route in [SECURITY.md](SECURITY.md); never a public issue |
 | Private semantic diff, dependency, migration, data-quality, or deployment work | Follow the non-sensitive introduction in [Assistant for Talend](docs/services.md) |
 

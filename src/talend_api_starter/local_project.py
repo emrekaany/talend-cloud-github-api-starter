@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import os
 import stat
-from pathlib import Path, PurePosixPath
+from contextlib import suppress
+from pathlib import Path
 
 from .errors import BudgetExceeded, ValidationError
 
@@ -64,6 +65,10 @@ def _validate_root(root: str | os.PathLike[str]) -> Path:
 def _safe_prefix_parts(path_prefix: str) -> tuple[str, ...]:
     if not isinstance(path_prefix, str):
         raise ValidationError("invalid_local_path_prefix")
+    try:
+        path_prefix.encode("utf-8")
+    except UnicodeEncodeError:
+        raise ValidationError("invalid_local_path_prefix") from None
     portable = path_prefix.replace("\\", "/")
     if (
         not portable
@@ -81,9 +86,6 @@ def _safe_prefix_parts(path_prefix: str) -> tuple[str, ...]:
         or any(ord(character) < 32 or ord(character) == 127 for character in part)
         for part in parts
     ):
-        raise ValidationError("invalid_local_path_prefix")
-    normalized = PurePosixPath(*parts)
-    if normalized.is_absolute() or normalized.parts != parts:
         raise ValidationError("invalid_local_path_prefix")
     return parts
 
@@ -124,6 +126,17 @@ def _safe_directory_for_descent(path: Path, root: Path) -> bool:
     return True
 
 
+def _safe_repository_relative_path(path: Path, repository: Path) -> str:
+    try:
+        relative_path = path.relative_to(repository).as_posix()
+        relative_path.encode("utf-8")
+    except (UnicodeEncodeError, ValueError):
+        raise ValidationError("local_project_path_rejected") from None
+    if any(ord(character) < 32 or ord(character) == 127 for character in relative_path):
+        raise ValidationError("local_project_path_rejected")
+    return relative_path
+
+
 def _open_read_only(path: Path) -> tuple[int, os.stat_result, os.stat_result]:
     before = _safe_lstat(path, "local_project_file_read_failed")
     if _is_link_or_reparse(before) or not stat.S_ISREG(before.st_mode):
@@ -152,7 +165,13 @@ def _open_read_only(path: Path) -> tuple[int, os.stat_result, os.stat_result]:
 def _read_candidate(path: Path, *, properties_file: bool) -> bytes | None:
     descriptor, _before, opened_stat = _open_read_only(path)
     try:
-        with os.fdopen(descriptor, "rb") as stream:
+        try:
+            stream = os.fdopen(descriptor, "rb")
+        except BaseException:
+            with suppress(OSError):
+                os.close(descriptor)
+            raise
+        with stream:
             if properties_file:
                 probe = stream.read(_MARKER_PROBE_BYTES)
                 if _TALEND_PROPERTIES_MARKER not in probe:
@@ -225,6 +244,7 @@ def read_local_job_files(
             if not properties_file and not file_name.endswith(".item"):
                 continue
             path = current_path / file_name
+            relative_path = _safe_repository_relative_path(path, repository)
             try:
                 resolved = path.resolve(strict=True)
                 resolved.relative_to(repository)
@@ -242,7 +262,6 @@ def read_local_job_files(
             matched_bytes += len(content)
             if matched_bytes > MAX_LOCAL_TOTAL_BYTES:
                 raise BudgetExceeded("local_total_byte_budget_exceeded")
-            relative_path = path.relative_to(repository).as_posix()
             collected[relative_path] = content
 
     return collected

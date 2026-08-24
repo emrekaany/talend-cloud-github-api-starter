@@ -1,7 +1,7 @@
 """Public, deliberately low-detail error types.
 
 Remote response bodies and request headers are never included in these errors.
-That keeps an upstream echo, proxy diagnostic, or PAT out of terminal output.
+That keeps an upstream echo, proxy diagnostic, or credential out of terminal output.
 """
 
 from __future__ import annotations

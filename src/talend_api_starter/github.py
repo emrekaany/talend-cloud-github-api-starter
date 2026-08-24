@@ -26,6 +26,7 @@ _OWNER_REPO_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$")
 _REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,254}$")
 _SHA_RE = re.compile(r"^[0-9a-fA-F]{40,64}$")
 _INTERESTING_SUFFIXES = (".properties", ".item")
+MAX_TREE_COMPONENT_BYTES = 1_024
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,7 +56,9 @@ def normalize_git_ref(ref: str) -> str:
         return ref.lower()
     if ref.startswith("refs/"):
         ref = ref[5:]
-    if not (ref.startswith("heads/") or ref.startswith("tags/")):
+        if not (ref.startswith("heads/") or ref.startswith("tags/")):
+            raise ValidationError("Invalid GitHub ref")
+    elif not (ref.startswith("heads/") or ref.startswith("tags/")):
         ref = f"heads/{ref}"
     if (
         not _REF_RE.fullmatch(ref)
@@ -83,16 +86,22 @@ def validate_path_prefix(path_prefix: str) -> str:
     path_prefix = path_prefix.strip()
     if not path_prefix:
         raise ValidationError("Repository path prefix must not be empty")
+    try:
+        encoded_length = len(path_prefix.encode("utf-8"))
+    except UnicodeEncodeError:
+        raise ValidationError("Invalid repository path prefix") from None
     if (
         path_prefix.startswith("/")
         or path_prefix.endswith("/")
         or "//" in path_prefix
         or "\\" in path_prefix
-        or len(path_prefix.encode("utf-8")) > 1_024
+        or encoded_length > 1_024
     ):
         raise ValidationError("Invalid repository path prefix")
     for segment in path_prefix.split("/"):
-        if segment in ("", ".", "..") or any(ord(char) < 32 for char in segment):
+        if segment in ("", ".", "..") or any(
+            ord(char) < 32 or ord(char) == 127 for char in segment
+        ):
             raise ValidationError("Invalid repository path prefix")
     return path_prefix
 
@@ -183,13 +192,19 @@ class GitHubPublicClient:
     def __enter__(self) -> GitHubPublicClient:
         return self
 
-    def __exit__(self, *_: object) -> None:
-        self.close()
+    def __exit__(
+        self,
+        exception_type: object,
+        exception: object,
+        traceback: object,
+    ) -> None:
+        self._http.__exit__(exception_type, exception, traceback)
 
     def _get_json(self, path: str) -> Any:
         """Retry a small, bounded set of temporary gateway failures."""
 
-        for attempt in range(self.max_transient_retries + 1):
+        attempt = 0
+        while True:
             try:
                 return self._http.get_json(path)
             except ApiError as exc:
@@ -198,7 +213,7 @@ class GitHubPublicClient:
                     raise
                 if self.retry_delay_seconds:
                     time.sleep(self.retry_delay_seconds * (2**attempt))
-        raise AssertionError("unreachable GitHub retry state")
+                attempt += 1
 
     def _resolve_ref_details(
         self, owner: str, repository: str, ref: str
@@ -214,34 +229,32 @@ class GitHubPublicClient:
         if _SHA_RE.fullmatch(resolved_ref):
             commit_sha = resolved_ref
         else:
-            commit_sha = None
-            for index, candidate in enumerate(candidates):
-                try:
-                    ref_payload = _required_dict(
-                        self._get_json(f"{root}/git/ref/{quote(candidate, safe='/')}"),
-                        "invalid_ref_response",
-                    )
-                except ApiError as exc:
-                    if exc.status_code == 404 and index + 1 < len(candidates):
-                        continue
+            candidate = candidates[0]
+            try:
+                ref_payload = _required_dict(
+                    self._get_json(f"{root}/git/ref/{quote(candidate, safe='/')}"),
+                    "invalid_ref_response",
+                )
+            except ApiError as exc:
+                if exc.status_code != 404 or len(candidates) == 1:
                     raise
-                ref_object = _required_dict(
-                    ref_payload.get("object"), "invalid_ref_response"
+                candidate = candidates[1]
+                ref_payload = _required_dict(
+                    self._get_json(f"{root}/git/ref/{quote(candidate, safe='/')}"),
+                    "invalid_ref_response",
                 )
-                object_type = ref_object.get("type")
-                object_sha = _required_sha(
-                    ref_object.get("sha"), "invalid_ref_response"
-                )
-                if object_type == "commit":
-                    commit_sha = object_sha
-                elif object_type == "tag":
-                    commit_sha = self._peel_annotated_tag(root, object_sha)
-                else:
-                    raise ApiError("github", 200, "ref_target_not_commit")
-                resolved_ref = candidate
-                break
-            if commit_sha is None:
-                raise ApiError("github", 404, "not_found")
+            ref_object = _required_dict(
+                ref_payload.get("object"), "invalid_ref_response"
+            )
+            object_type = ref_object.get("type")
+            object_sha = _required_sha(ref_object.get("sha"), "invalid_ref_response")
+            if object_type == "commit":
+                commit_sha = object_sha
+            elif object_type == "tag":
+                commit_sha = self._peel_annotated_tag(root, object_sha)
+            else:
+                raise ApiError("github", 200, "ref_target_not_commit")
+            resolved_ref = candidate
         commit = _required_dict(
             self._get_json(f"{root}/git/commits/{commit_sha}"),
             "invalid_commit_response",
@@ -321,6 +334,7 @@ class GitHubPublicClient:
         if not isinstance(raw_entries, list):
             raise ApiError("github", 200, "invalid_tree_response")
         entries: list[dict[str, Any]] = []
+        seen_paths: set[str] = set()
         for raw in raw_entries:
             entry = _required_dict(raw, "invalid_tree_response")
             path = entry.get("path")
@@ -332,10 +346,13 @@ class GitHubPublicClient:
                 or "/" in path
                 or "\\" in path
                 or path in (".", "..")
-                or any(ord(char) < 32 for char in path)
+                or any(ord(char) < 32 or ord(char) == 127 for char in path)
+                or len(path.encode("utf-8")) > MAX_TREE_COMPONENT_BYTES
+                or path in seen_paths
                 or kind not in ("blob", "tree", "commit")
             ):
                 raise ApiError("github", 200, "invalid_tree_response")
+            seen_paths.add(path)
             entry = dict(entry)
             entry["sha"] = _required_sha(sha, "invalid_tree_response")
             entries.append(entry)
@@ -352,8 +369,6 @@ class GitHubPublicClient:
         path_prefix: str,
     ) -> str:
         current_sha = root_tree_sha
-        if not path_prefix:
-            return current_sha
         for segment in path_prefix.split("/"):
             entries = self._get_tree(owner, repository, current_sha)
             match = next((entry for entry in entries if entry["path"] == segment), None)
