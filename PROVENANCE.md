@@ -17,7 +17,7 @@ This repository is an independent reimplementation created for the public projec
 | `src/` and `tests/` | Independently authored for this repository from public provider contracts and the behavior-only validation record below | Published v0.2.0 and current v0.2.1 source reviewed with automated tests and public-safety scans |
 | Synthetic `examples/` / fixtures | Generated or hand-authored fictional data for this repository | Published v0.2.0 and current v0.2.1 source reviewed for private names, IDs, paths, hosts, and structural copying |
 | `README.md`, `docs/`, and root policies | Original explanatory material written for this repository | Published v0.2.0 and current v0.2.1 source reviewed for public boundaries, attribution, and unsupported claims |
-| `assets/hero.svg`, `assets/social-preview.svg`, and the rasterized `assets/social-preview.png` | Original brand-neutral artwork created for this repository | Re-rendered and reviewed for v0.2.0; contain no provider logo or copied visual asset |
+| Public product artwork (`hero`, `product-strip`, `sample-finding`, `verification-strip`, `assistant-flow`, `column-diagnostics`, `commit-diff`, and `social-preview`, in SVG/PNG form) | Original, brand-neutral artwork created for this repository from fictional findings and generic interface shapes | Rendered and visually reviewed on 2026-08-27; contains no provider logo, customer screenshot, private identifier, or copied visual asset |
 | Packaging and GitHub automation | Conventional project configuration authored for this repository | Direct dependencies/licenses reviewed and Actions pinned to immutable commits |
 
 The status above records intended origin, not a legal opinion or proof that every future contribution is compliant.
@@ -72,4 +72,4 @@ Before a public release:
 
 Any contribution that changes origin, imports a snippet, adds generated material, or introduces a dependency must update this file or `THIRD_PARTY_NOTICES.md` in the same pull request. When provenance cannot be established, do not merge the material.
 
-Last documentation and public-usability review: 2026-08-24.
+Last documentation, artwork provenance, and public-usability review: 2026-08-27.

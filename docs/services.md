@@ -1,65 +1,76 @@
-# From the free CLI to Assistant for Talend
+# Talend engineering products
 
-The free **Talend API + GitHub API CLI** gives developers a practical, bounded way to learn metadata access, inspect an authorized local Studio project, and explore supported artifacts in public GitHub repositories.
+![The free CLI leading to three separately scoped private Talend engineering products](../assets/hero.png)
 
-**Assistant for Talend** is the separate paid, private path for organizations whose questions require proprietary projects, cross-job semantics, migration decisions, data-quality evidence, or a customer-controlled deployment.
+The free **Talend API + GitHub API CLI** is the public starting point. It proves the read-only metadata foundation without requiring private source to be uploaded or leave the operator's machine.
 
-## Clear free/private boundary
+Any proprietary project, runtime evidence, database metadata, or commit history shared with us or used in a paid engagement belongs in a separately approved private scope.
 
-| Need | Free public CLI | Paid private Assistant for Talend |
+## Three private products
+
+| Product | Decision it supports | Evidence it uses |
 | --- | --- | --- |
-| Learn read-only Talend API calls | Included for supported GET metadata | Included in discovery when relevant |
-| Run a credential-free synthetic demo | Included | Not required |
-| Inspect an authorized local Studio project | Bounded supported job structure | Can be extended under an approved private scope |
-| Inspect public GitHub artifacts anonymously | Included | Private source may be possible after access/security review |
-| Semantic job diff | Not included | Scoped comparison of supported artifacts/revisions |
-| Cross-job dependency and impact analysis | Not included | Private dependency mapping and change-impact evidence |
-| Migration-readiness assessment | Not included | Compatibility, risk, and remediation analysis with stated limits |
-| Data-quality diagnostics | Not included | Source/schema/runtime evidence review under an agreed scope |
-| Private repository or internal network | Not included | Possible after architecture and authorization review |
-| Private/on-premises deployment | Not included | Designed around approved security and residency constraints |
-| Organization-specific recommendations | Not included | Defined deliverables, evidence, assumptions, and limitations |
+| **Assistant for Talend** | What matters, why, and what should we validate next? | Talend artifacts, Job families, ETL/SQL signals, optional runtime logs |
+| **Column Diagnostics** | Can a Talend ↔ Oracle column mismatch break or truncate a flow? | Talend schema metadata plus offline or authorized read-only Oracle metadata |
+| **Talend Commit Diff** | What changed between two revisions, and what deserves regression testing? | Two immutable Git snapshots and semantic Talend structure |
 
-Availability, scope, pricing, deployment, data handling, and support terms are agreed separately. The public repository makes no SLA, compatibility, outcome, or migration-success guarantee.
+Availability, pricing, deployment, support, authorization, and data handling are agreed separately. No public GitHub message authorizes access or analysis.
 
-## When the private path makes sense
+## Assistant for Talend
 
-The free CLI is the right starting point when you need to learn the interface, verify a bounded read workflow, or inspect non-sensitive source you can legally use.
+![Assistant for Talend evidence workflow](../assets/assistant-flow.png)
 
-Consider a private engagement when the decision depends on questions such as:
+The flagship product discovers a selected root Job and every resolvable transitive `tRunJob` child, then correlates ETL, SQL, runtime, and risk evidence.
 
-- Which jobs will be affected by this repository or context change?
-- Which components or patterns create the highest migration risk?
-- Where do schema drift and data-quality failures enter the flow?
-- How should the analysis run inside our network without uploading source?
-- What evidence should engineering, security, and management review before a migration?
+Outputs can include:
+
+- the exact Job, component, property, or query location;
+- evidence, confidence, effort, and change risk;
+- implementation guidance and validation steps;
+- navigable Markdown, HTML, JSON, or PDF reports.
+
+Deterministic local rules are available. An AI layer is optional and requires an explicitly reviewed endpoint and deployment design.
+
+## Column Diagnostics
+
+![Synthetic Talend to Oracle column compatibility review with explicit source-to-target direction](../assets/column-diagnostics.png)
+
+Compares Talend ETL metadata with Oracle metadata for types, character lengths, numeric precision/scale, nullability, missing or extra columns, direction-aware truncation risk, and proven order mismatches.
+
+Live Oracle access is optional. It requires a customer-authorized least-privilege account and uses only built-in allowlisted metadata `SELECT` statements; parameterized lookups use bind variables. Extracted Talend SQL is never executed or sent to Oracle. Dynamic or ambiguous lineage stays unresolved.
+
+## Talend Commit Diff
+
+![Synthetic semantic comparison of two immutable Talend commits](../assets/commit-diff.png)
+
+Compares two immutable Git snapshots without switching the working tree. It filters known Talend serialization noise and reports semantic component, parameter, connection, node, rename/move, and repeated-pattern changes.
+
+The deterministic review can produce risk signals, recommendations, and a regression test plan. It does not claim a complete runtime dependency graph. Private output may still contain operational identifiers and must be reviewed before sharing.
+
+Point-in-time local verification on 2026-08-24: Diagnostics passed 97 offline tests; Commit Diff passed 166 tests. Those private suites are not included in this public repository.
+
+## Free versus private
+
+| Free public CLI | Private products |
+| --- | --- |
+| Synthetic demo | Proprietary, customer-authorized evidence |
+| Bounded local/public inventory | Cross-Job and runtime analysis |
+| Public GitHub artifacts | Commit intelligence on approved source |
+| Supported Talend API GET metadata | Oracle ↔ Talend column diagnostics |
+| No hosted upload or SLA | Agreed architecture, deliverables, and limits |
 
 ## Start without sharing sensitive data
 
-For a first, non-sensitive inquiry, start a
-[GitHub Discussion](https://github.com/emrekaany/talend-cloud-github-api-starter/discussions)
-that contains only:
+Open a [non-sensitive GitHub Discussion](https://github.com/emrekaany/talend-cloud-github-api-starter/discussions) with only:
 
-- the broad business question (for example, dependency, migration, or data quality);
-- an approximate project-size band, not project or client names;
+- the broad decision you need to make;
+- an approximate project-size band;
 - high-level deployment constraints;
-- the desired decision or deliverable;
+- the product you want to explore;
 - a request to establish a private contact path.
 
-Do not attach files, screenshots, logs, outputs, identifiers, credentials, private URLs, or environment details. A public discussion is only a non-sensitive introduction; it does not authorize access or analysis.
-
-## Never send through public GitHub
-
-Never put the following in an issue, pull request, gist, screenshot, or public link:
-
-- PAT, SAT, password, cookie, authorization header, SSH key, or populated `.env`;
-- client/employer files, screenshots, logs, reports, database extracts, or source archives;
-- private repository, clone, tenant, workspace, project, task, run, host, or network identifiers;
-- `.item`, `.properties`, `talend.project`, contexts, connections, SQL, generated Java, or job exports;
-- personal, customer, employee, contract, incident, procurement, or production data.
-
-A private engagement begins only after an approved private channel, explicit scope, authorization, and data-handling path exist. A public discussion is not a private support channel and does not authorize access or analysis.
+Never post credentials, source files, logs, screenshots, outputs, private URLs, client names, repository identifiers, database details, or real Talend artifacts on public GitHub.
 
 ## Independence notice
 
-Assistant for Talend and this CLI are independent offerings. They are not Qlik products, do not imply Qlik affiliation, and do not replace provider support, licensing, or product entitlements. The paid scope focuses on customer-authorized engineering analysis and deployment.
+These are independent offerings, not Qlik products. They do not imply Qlik affiliation and do not replace provider licensing, support, security review, or product entitlements.

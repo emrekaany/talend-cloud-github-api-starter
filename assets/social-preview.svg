@@ -1,81 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
-  <title id="title">Talend API + GitHub API CLI</title>
-  <desc id="desc">Brand-neutral social preview for a free, read-only Python command-line toolkit.</desc>
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#06131f"/>
-      <stop offset="0.56" stop-color="#0b2232"/>
-      <stop offset="1" stop-color="#102a3c"/>
-    </linearGradient>
-    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#5eead4"/>
-      <stop offset="1" stop-color="#60a5fa"/>
-    </linearGradient>
-    <linearGradient id="warm" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#fde68a"/>
-      <stop offset="1" stop-color="#fb923c"/>
-    </linearGradient>
-    <pattern id="grid" width="44" height="44" patternUnits="userSpaceOnUse">
-      <path d="M44 0H0V44" fill="none" stroke="#d8f3ff" stroke-opacity="0.045"/>
-    </pattern>
-    <filter id="shadow" x="-40%" y="-40%" width="180%" height="200%">
-      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#020617" flood-opacity="0.5"/>
-    </filter>
-    <style>
-      .headline { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 52px; font-weight: 700; letter-spacing: -1px; }
-      .sub { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 30px; font-weight: 650; letter-spacing: 1px; }
-      .label { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 2.4px; }
-      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 16px; font-weight: 600; }
-      .footer { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; font-weight: 600; }
-    </style>
-  </defs>
-
-  <rect width="1280" height="640" fill="url(#bg)"/>
-  <rect width="1280" height="640" fill="url(#grid)"/>
-  <circle cx="1168" cy="-38" r="310" fill="#2563eb" opacity="0.12"/>
-  <circle cx="62" cy="672" r="310" fill="#14b8a6" opacity="0.11"/>
-
-  <g transform="translate(74 65)">
-    <rect width="300" height="42" rx="21" fill="#d8f3ff" fill-opacity="0.075" stroke="#d8f3ff" stroke-opacity="0.16"/>
-    <circle cx="23" cy="21" r="6" fill="#5eead4"/>
-    <text x="43" y="28" class="label" fill="#bfeaf4">METADATA, NOT MUTATIONS</text>
-  </g>
-
-  <text x="74" y="195" class="headline" fill="#f8fafc">Talend API + GitHub API CLI</text>
-  <text x="74" y="249" class="sub" fill="url(#accent)">Free · Read-only · Python</text>
-
-  <g transform="translate(74 326)" filter="url(#shadow)">
-    <rect width="328" height="176" rx="25" fill="#0e2a3a" stroke="#5eead4" stroke-opacity="0.38"/>
-    <circle cx="57" cy="50" r="27" fill="#5eead4" fill-opacity="0.13"/>
-    <path d="M40 59h34c9 0 15-6 15-14 0-9-6-15-14-15-4-8-11-13-21-13-12 0-21 9-21 21v2c-8 1-13 7-13 15 0 9 7 15 20 15" fill="none" stroke="#5eead4" stroke-width="3" stroke-linecap="round"/>
-    <text x="104" y="47" class="label" fill="#8ce8dc">TALEND API</text>
-    <text x="104" y="76" class="mono" fill="#d8f3ff">workspaces · tasks · runs</text>
-    <line x1="26" y1="108" x2="302" y2="108" stroke="#d8f3ff" stroke-opacity="0.12"/>
-    <text x="26" y="144" class="mono" fill="#91aeb9">allowlisted HTTPS GET</text>
-  </g>
-
-  <g transform="translate(878 326)" filter="url(#shadow)">
-    <rect width="328" height="176" rx="25" fill="#0e2a3a" stroke="#60a5fa" stroke-opacity="0.38"/>
-    <rect x="29" y="22" width="53" height="67" rx="8" fill="#60a5fa" fill-opacity="0.12" stroke="#60a5fa" stroke-width="2"/>
-    <path d="M41 43h29M41 55h29M41 67h20" stroke="#9bc7ff" stroke-width="3" stroke-linecap="round"/>
-    <text x="104" y="47" class="label" fill="#9bc7ff">LOCAL + GITHUB</text>
-    <text x="104" y="76" class="mono" fill="#d8f3ff">.item + .properties</text>
-    <line x1="26" y1="108" x2="302" y2="108" stroke="#d8f3ff" stroke-opacity="0.12"/>
-    <text x="26" y="144" class="mono" fill="#91aeb9">immutable commit · safe XML</text>
-  </g>
-
-  <g transform="translate(495 333)" filter="url(#shadow)">
-    <path d="M-68 79H0M290 79h88" fill="none" stroke="url(#accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="7 10"/>
-    <path d="M0 79l-16-11v22zM290 79l16-11v22z" fill="#75d7dd"/>
-    <rect width="290" height="158" rx="30" fill="#132f3f" stroke="url(#accent)" stroke-width="2"/>
-    <path d="M145 23l29 11v25c0 23-12 42-29 52-17-10-29-29-29-52V34z" fill="url(#accent)" fill-opacity="0.16" stroke="#75d7dd" stroke-width="2"/>
-    <path d="M132 59l9 9 18-21" fill="none" stroke="#7ce4d8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-    <text x="145" y="131" text-anchor="middle" class="label" fill="#d9f5f2">SANITIZED SUMMARY</text>
-  </g>
-
-  <g transform="translate(350 551)">
-    <rect width="580" height="48" rx="24" fill="#06131f" fill-opacity="0.82" stroke="#d8f3ff" stroke-opacity="0.14"/>
-    <circle cx="28" cy="24" r="9" fill="url(#warm)"/>
-    <text x="50" y="30" class="footer" fill="#d7e9ee">Offline demo first · No task execution · No business rows</text>
-  </g>
+  <title id="title">Independent Talend engineering toolkit social preview</title><desc id="desc">Inspect safely for free and diagnose deeply in private with Assistant for Talend, Column Diagnostics, and Talend Commit Diff.</desc>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#06131f"/><stop offset="1" stop-color="#123247"/></linearGradient><style>.eyebrow{font:760 19px ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:3px}.headline{font:800 55px ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:-1.2px}.body{font:580 25px ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}.title{font:740 22px ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}.mono{font:650 16px ui-monospace,SFMono-Regular,Menlo,monospace}</style></defs>
+  <rect width="1280" height="640" fill="url(#bg)"/><circle cx="1190" cy="-20" r="310" fill="#2563eb" opacity=".09"/><circle cx="20" cy="650" r="300" fill="#14b8a6" opacity=".08"/>
+  <text x="70" y="76" class="eyebrow" fill="#8ce8dc">INDEPENDENT TALEND ENGINEERING TOOLKIT</text><text x="70" y="170" class="headline" fill="#f8fafc">INSPECT SAFELY</text><text x="70" y="236" class="headline" fill="#5eead4">FOR FREE.</text><text x="70" y="324" class="headline" fill="#f8fafc">DIAGNOSE DEEPLY</text><text x="70" y="390" class="headline" fill="#60a5fa">IN PRIVATE.</text><text x="74" y="447" class="body" fill="#c7dce3">Read-only CLI → customer-authorized engineering products</text>
+  <g transform="translate(72 494)"><rect width="224" height="48" rx="24" fill="#0e2a3a" stroke="#5eead4" stroke-opacity=".4"/><text x="112" y="31" text-anchor="middle" class="title" fill="#d1fae5">Free public CLI</text><rect x="240" width="254" height="48" rx="24" fill="#102a42" stroke="#60a5fa" stroke-opacity=".4"/><text x="367" y="31" text-anchor="middle" class="title" fill="#dbeafe">No job execution</text></g>
+  <g transform="translate(810 86)"><rect width="400" height="466" rx="30" fill="#0b2030" stroke="#8ce8dc" stroke-opacity=".25"/><text x="28" y="50" class="eyebrow" fill="#9bc7ff">PRIVATE PRODUCTS</text><g transform="translate(28 78)"><rect width="344" height="102" rx="20" fill="#102a42"/><text x="22" y="42" class="title" fill="#f8fafc">Assistant for Talend</text><text x="22" y="72" class="mono" fill="#9bc7ff">JOB FAMILY → ACTION</text><rect y="120" width="344" height="102" rx="20" fill="#0e2a3a"/><text x="22" y="162" class="title" fill="#f8fafc">Column Diagnostics</text><text x="22" y="192" class="mono" fill="#8ce8dc">TALEND ↔ ORACLE</text><rect y="240" width="344" height="102" rx="20" fill="#102a42"/><text x="22" y="282" class="title" fill="#f8fafc">Talend Commit Diff</text><text x="22" y="312" class="mono" fill="#9bc7ff">SEMANTIC CHANGE</text></g><text x="200" y="440" text-anchor="middle" class="mono" fill="#c7dce3">PRIVATE · APPROVED · REVIEWABLE</text></g>
 </svg>

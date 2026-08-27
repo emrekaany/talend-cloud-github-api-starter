@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1240" viewBox="0 0 1000 1240" role="img" aria-labelledby="title desc">
+  <title id="title">Talend to Oracle Column Diagnostics</title>
+  <desc id="desc">A synthetic, vertically structured product card shows an explicit Talend ETL source to Oracle metadata target comparison, the supported column checks, and the read-only safety boundary.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#06131f"/>
+      <stop offset="1" stop-color="#123b42"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5eead4"/>
+      <stop offset="1" stop-color="#2dd4bf"/>
+    </linearGradient>
+    <pattern id="grid" width="44" height="44" patternUnits="userSpaceOnUse">
+      <path d="M44 0H0V44" fill="none" stroke="#d8f3ff" stroke-opacity="0.04"/>
+    </pattern>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="16" stdDeviation="22" flood-color="#020617" flood-opacity="0.42"/>
+    </filter>
+    <style>
+      .eyebrow { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 23px; font-weight: 760; letter-spacing: 3px; }
+      .headline { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 53px; font-weight: 800; letter-spacing: -1px; }
+      .subtitle { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 29px; font-weight: 520; }
+      .section { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 27px; font-weight: 760; letter-spacing: 1.2px; }
+      .body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 28px; font-weight: 560; }
+      .small { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 24px; font-weight: 580; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 25px; font-weight: 650; }
+    </style>
+  </defs>
+
+  <rect width="1000" height="1240" rx="34" fill="url(#background)"/>
+  <rect width="1000" height="1240" rx="34" fill="url(#grid)"/>
+  <circle cx="950" cy="5" r="250" fill="#14b8a6" opacity="0.1"/>
+  <circle cx="35" cy="1220" r="250" fill="#22d3ee" opacity="0.08"/>
+
+  <text x="500" y="66" text-anchor="middle" class="eyebrow" fill="#a9c6cd">PRIVATE TALEND ENGINEERING · SYNTHETIC</text>
+  <text x="500" y="137" text-anchor="middle" class="headline" fill="#f8fafc">Column Diagnostics</text>
+  <text x="500" y="184" text-anchor="middle" class="subtitle" fill="#c7dce3">Review Talend ↔ Oracle column compatibility before release.</text>
+
+  <g transform="translate(54 226)" filter="url(#shadow)">
+    <rect width="892" height="338" rx="28" fill="#0d2a36" stroke="#5eead4" stroke-opacity="0.46" stroke-width="2"/>
+    <text x="446" y="48" text-anchor="middle" class="eyebrow" fill="#8ce8dc">EXPLICIT SOURCE → TARGET DIRECTION</text>
+
+    <g transform="translate(30 78)">
+      <rect width="374" height="212" rx="23" fill="#071722" stroke="#5eead4" stroke-opacity="0.3"/>
+      <text x="24" y="40" class="section" fill="#8ce8dc">SOURCE · TALEND ETL</text>
+      <text x="24" y="88" class="mono" fill="#e3f1f4">amount  BigDecimal(12,4)</text>
+      <text x="24" y="131" class="mono" fill="#e3f1f4">name    String(80)</text>
+      <text x="24" y="174" class="mono" fill="#e3f1f4">status  nullable</text>
+    </g>
+
+    <path d="M424 180H468" stroke="url(#accent)" stroke-width="6" stroke-linecap="round"/>
+    <path d="m461 168 16 12-16 12" fill="none" stroke="#5eead4" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <g transform="translate(488 78)">
+      <rect width="374" height="212" rx="23" fill="#071722" stroke="#5eead4" stroke-opacity="0.3"/>
+      <text x="24" y="40" class="section" fill="#8ce8dc">TARGET · ORACLE</text>
+      <text x="24" y="88" class="mono" fill="#e3f1f4">AMOUNT  NUMBER(10,2)</text>
+      <text x="24" y="131" class="mono" fill="#e3f1f4">NAME    VARCHAR2(50)</text>
+      <text x="24" y="174" class="mono" fill="#e3f1f4">STATUS  NOT NULL</text>
+    </g>
+
+    <rect x="254" y="303" width="384" height="24" rx="12" fill="#5eead4" fill-opacity="0.12"/>
+    <text x="446" y="324" text-anchor="middle" class="small" fill="#8ce8dc">Direction is explicit for every check</text>
+  </g>
+
+  <g transform="translate(54 594)" filter="url(#shadow)">
+    <rect width="892" height="294" rx="28" fill="#0b2430" stroke="#5eead4" stroke-opacity="0.38" stroke-width="2"/>
+    <text x="32" y="50" class="eyebrow" fill="#8ce8dc">COLUMN COMPATIBILITY SIGNALS</text>
+
+    <g transform="translate(30 80)">
+      <rect width="260" height="72" rx="20" fill="#061824" stroke="#5eead4" stroke-opacity="0.24"/>
+      <text x="130" y="46" text-anchor="middle" class="body" fill="#e3f1f4">Type</text>
+    </g>
+    <g transform="translate(316 80)">
+      <rect width="260" height="72" rx="20" fill="#061824" stroke="#5eead4" stroke-opacity="0.24"/>
+      <text x="130" y="46" text-anchor="middle" class="body" fill="#e3f1f4">Length</text>
+    </g>
+    <g transform="translate(602 80)">
+      <rect width="260" height="72" rx="20" fill="#061824" stroke="#5eead4" stroke-opacity="0.24"/>
+      <text x="130" y="46" text-anchor="middle" class="body" fill="#e3f1f4">Precision / scale</text>
+    </g>
+
+    <g transform="translate(30 174)">
+      <rect width="260" height="72" rx="20" fill="#061824" stroke="#5eead4" stroke-opacity="0.24"/>
+      <text x="130" y="46" text-anchor="middle" class="body" fill="#e3f1f4">Nullability</text>
+    </g>
+    <g transform="translate(316 174)">
+      <rect width="260" height="72" rx="20" fill="#061824" stroke="#5eead4" stroke-opacity="0.24"/>
+      <text x="130" y="46" text-anchor="middle" class="body" fill="#e3f1f4">Missing / extra</text>
+    </g>
+    <g transform="translate(602 174)">
+      <rect width="260" height="72" rx="20" fill="#061824" stroke="#5eead4" stroke-opacity="0.24"/>
+      <text x="130" y="46" text-anchor="middle" class="body" fill="#e3f1f4">Truncation risk</text>
+    </g>
+  </g>
+
+  <g transform="translate(54 918)" filter="url(#shadow)">
+    <rect width="892" height="210" rx="28" fill="#0a1d29" stroke="url(#accent)" stroke-opacity="0.48" stroke-width="2"/>
+    <text x="32" y="48" class="eyebrow" fill="#8ce8dc">OPTIONAL AUTHORIZED ORACLE METADATA</text>
+    <text x="32" y="91" class="body" fill="#e3f1f4">Customer-authorized · read-only metadata</text>
+    <text x="32" y="133" class="body" fill="#e3f1f4">No extracted Talend SQL execution</text>
+    <text x="32" y="175" class="body" fill="#9fbcc7">Ambiguous lineage stays unknown</text>
+  </g>
+
+  <g transform="translate(160 1156)">
+    <rect width="680" height="52" rx="26" fill="#06131f" fill-opacity="0.9" stroke="#5eead4" stroke-opacity="0.25"/>
+    <text x="340" y="35" text-anchor="middle" class="mono" fill="#8ce8dc">97 LOCAL OFFLINE TESTS · PRIVATE SCOPE</text>
+  </g>
+</svg>
