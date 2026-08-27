@@ -24,6 +24,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Fixed
 
+- Preserve the `OWNER/REPOSITORY` CLI help contract when the minimum supported
+  Typer release is resolved with Click 8.5.
 - Resolve a bare Git ref as a branch first and then as a tag when the branch is
   absent, while preserving explicit `refs/heads/...`, `refs/tags/...`, and
   commit-SHA behavior.

@@ -115,7 +115,9 @@ def local_jobs(
 @github_app.command("jobs")
 def github_jobs(
     repository: str = typer.Argument(
-        ..., help="Public repository in OWNER/REPOSITORY format."
+        ...,
+        metavar="OWNER/REPOSITORY",
+        help="Public repository in OWNER/REPOSITORY format.",
     ),
     ref: str = typer.Option(
         "main",
@@ -131,7 +133,10 @@ def github_jobs(
         Path("github-output"), "--output-dir", file_okay=False
     ),
 ) -> None:
-    """Inventory .properties/.item pairs from one resolved commit."""
+    """Inventory .properties/.item pairs from one resolved public repository.
+
+    REPOSITORY must use OWNER/REPOSITORY format.
+    """
 
     def action() -> OutputPaths:
         owner, repository_name = parse_repository_slug(repository)

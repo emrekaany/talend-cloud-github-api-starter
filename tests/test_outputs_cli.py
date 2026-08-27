@@ -153,7 +153,10 @@ def test_nested_command_names_are_exposed() -> None:
         result = runner.invoke(app, list(args))
         assert result.exit_code == 0, result.output
     github_help = runner.invoke(app, ["github", "jobs", "--help"])
-    assert "OWNER/REPOSITORY" in github_help.output
+    usage_line = next(
+        line for line in github_help.output.splitlines() if "Usage:" in line
+    )
+    assert "OWNER/REPOSITORY" in usage_line
 
 
 def test_talend_output_redacts_secret_and_allowlists_share_fields() -> None:
